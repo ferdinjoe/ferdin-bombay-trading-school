@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Week 1 - Day 2 | Dow Theory: Price, Trends and Volume</title>
+<style>
+  :root{
+    --bg:#0a0d12; --bg2:#0e131a; --panel:#121821; --panel2:#161d28;
+    --line:#1f2836; --line2:#2a3546;
+    --ink:#dce6f1; --dim:#93a3b7; --mute:#63748a;
+    --up:#26b376; --down:#e34f5c; --accent:#f2b53c; --info:#4ba3d8;
+    --mono:"Cascadia Mono","JetBrains Mono","Roboto Mono",ui-monospace,Consolas,monospace;
+    --sans:"Inter","Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--sans)}
+
+  /* ---------- deck chrome ---------- */
+  #bar{position:fixed;inset:0 auto auto 0;width:100%;height:3px;background:var(--line);z-index:40}
+  #barFill{height:100%;width:0;background:var(--accent);transition:width .18s}
+  #hud{position:fixed;right:14px;bottom:12px;z-index:40;display:flex;gap:8px;align-items:center;
+       font:12px var(--mono);color:var(--mute)}
+  #hud button{background:var(--panel);border:1px solid var(--line2);color:var(--dim);
+       font:12px var(--mono);padding:5px 9px;cursor:pointer;border-radius:3px}
+  #hud button:hover{color:var(--ink);border-color:var(--accent)}
+
+  /* ---------- slides ---------- */
+  .slide{display:none;min-height:100vh;padding:56px 72px 78px;flex-direction:column;gap:18px;
+         background:linear-gradient(160deg,var(--bg) 0%,var(--bg2) 100%)}
+  body.deck-nav .slide{display:none}
+  .slide.is-on{display:flex}
+  .kicker{font:11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+  h1{font-size:44px;line-height:1.1;margin:0;font-weight:650;letter-spacing:-.02em}
+  h2{font-size:31px;line-height:1.18;margin:0;font-weight:640;letter-spacing:-.015em}
+  h3{font-size:19px;margin:0 0 6px;font-weight:640;color:var(--ink)}
+  p,li{color:var(--dim);max-width:100%}
+  .lead{font-size:19px;color:var(--ink)}
+  strong{color:var(--ink);font-weight:640}
+  em{color:var(--accent);font-style:normal}
+  .num{font-family:var(--mono)}
+  .cols{display:grid;gap:22px}
+  .c2{grid-template-columns:1fr 1fr}
+  .c3{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:1080px){.slide{padding:34px 22px}.c2,.c3{grid-template-columns:1fr}h1{font-size:32px}h2{font-size:25px}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px 18px}
+  .card.up{border-left:3px solid var(--up)}
+  .card.down{border-left:3px solid var(--down)}
+  .card.warn{border-left:3px solid var(--accent)}
+  .card.info{border-left:3px solid var(--info)}
+  .tag{display:inline-block;font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;
+       padding:2px 7px;border-radius:2px;background:var(--panel2);color:var(--mute);border:1px solid var(--line)}
+  .tag.real{color:var(--up);border-color:rgba(38,179,118,.4)}
+  .tag.schema{color:var(--accent);border-color:rgba(242,181,60,.4)}
+  .tag.demo{color:var(--info);border-color:rgba(75,163,216,.4)}
+
+  ul.tight{margin:6px 0;padding-left:20px}
+  ul.tight li{margin:5px 0}
+  .rule{font-size:21px;color:var(--ink);border-left:3px solid var(--accent);padding-left:16px;margin:4px 0}
+
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  th{text-align:left;font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);
+     border-bottom:1px solid var(--line2);padding:7px 9px}
+  td{border-bottom:1px solid var(--line);padding:7px 9px;color:var(--dim);vertical-align:top}
+  td.num{color:var(--ink)}
+  tr.hi td{background:rgba(242,181,60,.07);color:var(--ink)}
+
+  .notes{background:var(--bg2);border:1px dashed var(--line2);border-radius:5px;padding:12px 15px;
+         font-size:14.5px;color:var(--mute)}
+  .notes[contenteditable]:focus{outline:1px solid var(--accent);color:var(--dim)}
+  .notes b{color:var(--accent);font-weight:600}
+  .nlabel{font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin-bottom:5px}
+
+  svg{display:block;width:100%;height:auto;background:var(--bg2);border:1px solid var(--line);border-radius:5px}
+  .cap{font:12px var(--mono);color:var(--mute);margin-top:6px}
+
+  .qa{border-top:1px solid var(--line);padding:11px 0}
+  .qa .q{color:var(--ink);font-weight:600;margin:0 0 4px}
+  .qa .a{color:var(--dim);margin:0;font-size:15px}
+  .qa .a::before{content:"A. ";color:var(--accent);font-family:var(--mono)}
+  .qa .q::before{content:"Q. ";color:var(--info);font-family:var(--mono)}
+
+  .clock{font:26px var(--mono);color:var(--accent)}
+  .big{font-size:60px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1}
+  .kbd{font:11px var(--mono);background:var(--panel2);border:1px solid var(--line2);border-radius:3px;padding:1px 6px;color:var(--dim)}
+  .foot{position:absolute;left:72px;bottom:26px;font:11px var(--mono);color:var(--mute)}
+  .slide{position:relative}
+  a{color:var(--info)}
+  .path{font:13px var(--mono);background:var(--panel2);border:1px solid var(--line);border-radius:4px;
+        padding:7px 10px;color:var(--ink);display:block;margin:4px 0}
+
+  /* ---------- live tape ---------- */
+  #tick{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line2);
+        border-radius:3px;padding:3px 9px;font:12px var(--mono);color:var(--dim)}
+  #tickSym{color:var(--mute);letter-spacing:.04em}
+  #tickPrice{color:var(--ink);font-weight:600;min-width:74px;text-align:right;transition:color .12s}
+  #tickPrice.up{color:var(--up)} #tickPrice.down{color:var(--down)}
+  #tickSpark{width:92px;height:22px;background:none;border:0;display:block}
+  #tickSpark polyline{fill:none;stroke:var(--info);stroke-width:1.4}
+  #tickAge{color:var(--mute);min-width:52px}
+  #hud{flex-wrap:wrap;justify-content:flex-end;max-width:60vw}
+  #hud button.is-off{color:var(--mute)}
+
+  .live{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:12px 14px;
+        display:flex;flex-direction:column;gap:10px}
+  .live-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+  .live-bar .fld{display:flex;flex-direction:column;gap:3px}
+  .live-bar .fld>span{font:9.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+  .live input,.live select,.live button{background:var(--bg2);color:var(--ink);border:1px solid var(--line2);
+        border-radius:4px;font:13px var(--mono);padding:6px 8px}
+  .live input{width:150px} .live input:focus{outline:1px solid var(--accent)}
+  .live button{cursor:pointer} .live button:hover{border-color:var(--accent);color:var(--accent)}
+  .live button.chip{font-size:11px;padding:4px 7px;color:var(--dim);background:var(--panel2)}
+  .live button.chip.is-on{border-color:var(--accent);color:var(--accent)}
+  .live-bar .chips{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-left:auto;
+        font:10px var(--mono);color:var(--mute)}
+  .live-read{display:grid;grid-template-columns:repeat(6,1fr);gap:9px}
+  .live-read>div{background:var(--bg2);border:1px solid var(--line);border-radius:5px;padding:7px 9px;min-width:0}
+  .live-read .lbl{font:9px var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--mute)}
+  .live-read .kv{font:14px var(--mono);color:var(--ink);margin-top:3px;white-space:nowrap;
+        overflow:hidden;text-overflow:ellipsis}
+  .live-read .price{font:26px var(--mono);font-weight:600;color:var(--ink);margin-top:1px;transition:color .15s}
+  .live-read .price.up{color:var(--up)} .live-read .price.down{color:var(--down)}
+  #liveCv{display:block;width:100%;height:322px;background:var(--bg);border:1px solid var(--line);border-radius:5px}
+  .live-stat{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;
+        font:11.5px var(--mono);color:var(--mute)}
+  .live-stat .ok{color:var(--up)} .live-stat .bad{color:var(--down)} .live-stat .warn{color:var(--accent)}
+  @media (max-width:1080px){
+    #hud{max-width:100%} #tickAge,#btnReset{display:none}
+    .live-read{grid-template-columns:repeat(2,1fr)}
+    #liveCv{height:194px}
+    .live-bar .chips{margin-left:0}
+  }
+
+  /* ---------- handout / print ---------- */
+  body.handout .slide{display:flex !important;min-height:0;page-break-after:always;border-bottom:1px solid var(--line2);
+        padding:26px 34px}
+  @media print{
+    body{background:#fff;color:#111}
+    .slide{display:flex !important;min-height:0;page-break-after:always;background:#fff;padding:14mm 12mm}
+    #hud,#bar{display:none}
+    .card,.notes,svg{background:#fff;border-color:#ccc}
+    h1,h2,h3,p,li,td,strong,.rule,.lead{color:#111}
+    .tag{background:#eee;color:#444}
+  }
+</style>
+</head>
+<body class="deck-nav">
+<div id="bar"><div id="barFill"></div></div>
+<div id="hud">
+  <div id="tick" title="live tape - the same pull feeds the chart on slide 24">
+    <span id="tickSym">^NSEI</span>
+    <span id="tickPrice">--</span>
+    <svg id="tickSpark" viewBox="0 0 92 22" aria-hidden="true"><polyline id="tickLine" points=""></polyline></svg>
+    <span id="tickAge">--</span>
+  </div>
+  <button id="btnTape" type="button">tape: on</button>
+  <button id="btnHand" type="button">handout</button>
+  <button id="btnReset" type="button">reset notes</button>
+  <span id="ctr">1 / 1</span>
+</div>
+
+<!-- 1 -->
+<section class="slide" id="s1" data-t="0:00">
+  <div class="kicker">Market Structure Course - Week 1, Day 2</div>
+  <h1>Dow Theory: price, the three trends,<br>and volume that has to agree</h1>
+  <p class="lead">Read on the board as <em>doubt theory</em> - it is <strong>Dow Theory</strong>, after Charles H. Dow,
+     who wrote the market letters in the 1890s. Nothing in today's session is a new invention. It is the oldest
+     filter we have, and it is the reason this course refuses to call an unconfirmed move a signal.</p>
+  <div class="cols c3">
+    <div class="card up"><h3>1. Price discounts everything</h3><p>And the <strong>close</strong> is the loudest part of price.
+      Election day, Nifty Auto, the 2020 lockdown - all real tape.</p></div>
+    <div class="card warn"><h3>2. Three trends</h3><p>Primary on monthly, secondary for 18-24 months, minor under 3 weeks.
+      Trade the minor only in the direction of the primary.</p></div>
+    <div class="card info"><h3>3. Volume must confirm</h3><p>A break of a prior high or low that volume does not
+      support is a rumour, not a signal.</p></div>
+  </div>
+  <div class="notes" data-note="cover"><span class="nlabel">Opening - say this before the first slide of content</span>
+    <b>90 minutes, then a 10-minute break.</b> Two housekeeping points: (a) the scanners, indicator set and book list
+    are ready but I release them one topic at a time - today you get the eye, not the tools; (b) if you take one thing
+    out of today, take the sentence "the close is the vote".</div>
+  <div class="foot"><span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> navigate &nbsp;|&nbsp; <span class="kbd">H</span> handout &nbsp;|&nbsp; click any dashed box to edit your own notes</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" id="s2" data-t="0:00">
+  <div class="kicker">Running order</div>
+  <h2>What we cover, and how long each part takes</h2>
+  <table id="agenda">
+    <thead><tr><th style="width:78px">Time</th><th style="width:220px">Segment</th><th>Covers</th><th style="width:120px">Slides</th></tr></thead>
+    <tbody>
+      <tr><td class="num">0:00-0:08</td><td><strong>Dow Theory in one breath</strong></td><td>Three axioms; why "doubt theory" is a mis-hearing</td><td class="num">1-3</td></tr>
+      <tr><td class="num">0:08-0:26</td><td><strong>Closing price; price discounts everything</strong></td><td>Close gets the weight; Jun 4 2024 election day; Nifty Auto Sep 2024 to Apr 7 2025; sugar and Hormuz; the 2020 lockdown bottom</td><td class="num">4-9</td></tr>
+      <tr><td class="num">0:26-0:36</td><td><strong>Q&amp;A: using price over news</strong></td><td>Why searching for the "why" becomes an excuse for a loss; auto sales on the 1st; RBI calendar as trigger</td><td class="num">10</td></tr>
+      <tr><td class="num">0:36-0:56</td><td><strong>The three trends</strong></td><td>Primary monthly / years; secondary 18-24 months counter-trend; minor under 3 weeks; the 8-year rhythm in real data; Voltas as an observer call</td><td class="num">11-17</td></tr>
+      <tr><td class="num">0:56-1:12</td><td><strong>Volume confirms the trend</strong></td><td>Rise on a break of the prior high/low; Reliance confirmed vs unconfirmed breaks; reading volume against the last 5-6 bars; colour is a gimmick</td><td class="num">18-22</td></tr>
+      <tr><td class="num">1:12-1:22</td><td><strong>Live charts at the desk</strong></td><td>Real tape, exact click paths, structure labels and RVOL on screen - then the 3-second live chart on slide 24, running in this deck</td><td class="num">23-24</td></tr>
+      <tr class="hi"><td class="num">1:22-1:30</td><td><strong>Open Q&amp;A + recap board</strong></td><td>Then the break</td><td class="num">25-27</td></tr>
+      <tr><td class="num">1:30</td><td><strong>Break - 10 minutes</strong></td><td>Return for Day 3: naming the swing on a blank chart</td><td class="num">28</td></tr>
+    </tbody>
+  </table>
+  <div class="notes" data-note="agenda">Timings are mine, not given to you - adjust for the room. If you are running short,
+    cut slides 12-13 (the 8-year rhythm) and keep 18-22: <b>volume is what stops people losing money this week.</b></div>
+</section>
+
+<!-- 3 -->
+<section class="slide" id="s3" data-t="0:02">
+  <div class="kicker">Dow Theory - the three things we test today</div>
+  <h2>Three claims. All three are falsifiable on a chart.</h2>
+  <div class="cols c3">
+    <div class="card"><h3>The index is a thermometer</h3>
+      <p>Dow: the average <strong>discounts (absorbs) everything</strong> that is known and most of what is
+      merely rumoured. If information exists, somebody with money has already traded it.</p></div>
+    <div class="card"><h3>Trends come in three sizes</h3>
+      <p>Primary (years, monthly chart), secondary (weeks to ~2 years, the correction inside the big move),
+      minor (under three weeks, the noise you trade or ignore).</p></div>
+    <div class="card"><h3>Volume must confirm the trend</h3>
+      <p>Dow's own test: participation should <strong>increase in the direction of the main trend</strong> and
+      shrink on the counter-move. A breakout on shrinking participation is suspect.</p></div>
+  </div>
+  <div class="rule">Our addition, because we are trading and not writing letters in 1902: <strong>a move that volume
+    does not confirm is not a signal. It is a watch item.</strong></div>
+  <div class="notes" data-note="axioms">Say plainly that Dow never wrote a book; these are the letters, edited by
+    <b>Robert Rhea (1922)</b> and <b>Hamilton</b>. It helps people take "130-year-old idea" seriously when you add
+    that every modern trend filter is a restatement of it. Also flag what Dow does <em>not</em> say: it never
+    promised a mechanical buy point, and it explicitly expects the secondary move to be the one that hurts you.</div>
+</section>
+
+<!-- 4 -->
+<section class="slide" id="s4" data-t="0:06">
+  <div class="kicker">Part 1 - price discounts everything</div>
+  <h2>The news is not the event. The price action <em>after</em> the event is the news.</h2>
+  <div class="cols c2">
+    <div>
+      <h3>What the axiom buys you</h3>
+      <ul class="tight">
+        <li>Every <strong>man-made</strong> event - elections, budgets, RBI policy, quarterly results, tariff
+          headlines - is known to enough people that it is <strong>priced in early</strong>. By the time you read
+          it, the move is largely done.</li>
+        <li><strong>Natural disasters</strong> and genuinely unforeseeable shocks are the exception: they cause the
+          knee-jerk dip, and the dip <strong>recovers</strong>, because nobody had time to position.</li>
+        <li>So your edge is never "I knew the news". Your edge is reading what price did with the news.</li>
+      </ul>
+      <div class="rule">If you cannot find the reason in the price, the reason is not the point. <strong>The close is.</strong></div>
+    </div>
+    <div>
+      <h3>Consequence for how we label a chart</h3>
+      <ul class="tight">
+        <li>Structure is built from <strong>swing highs and lows</strong> - visibly, not by an indicator.</li>
+        <li>A pivot only counts once price has moved away from it for the required number of bars. Before that it is
+          <strong>unconfirmed</strong>, and we do not trade it.</li>
+        <li>A pivot that only the wick touched is worth less than one the <strong>close</strong> defended. That is the
+          close-weighting rule again, one layer down.</li>
+      </ul>
+      <div class="card warn"><p>On the desk this is the toggle <strong>Close-weighted pivots</strong> and the label
+        column <em>Weight</em> in the swings table. Wick-only pivots are still drawn, but they do not get to be a
+        level you place a stop behind.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="slide" id="s5" data-t="0:04">
+  <div class="kicker">Part 1 - the closing price</div>
+  <h2>Daily close gets the most weight. Always check it before any trade decision - even intraday.</h2>
+  <div class="rule">The open is an intention. The intraday range is an argument. <strong>The close is the
+    settlement.</strong></div>
+  <div class="cols c3">
+    <div class="card"><h3>Why the close</h3><p>It is the one price at which every participant, including the ones
+      with the most money, has had the whole session to change their mind - and where index and derivative
+      settlement actually happens.</p></div>
+    <div class="card"><h3>Intraday does not exempt you</h3><p>Even if you are scalping a 5-minute chart, you first ask
+      what yesterday's close did and where today's close is likely to fall. The intraday move inherits the daily one.</p></div>
+    <div class="card down"><h3>The mistake this kills</h3><p>Selling because of a mid-session spike, or buying a low
+      that was never a level. The extreme <strong>touches</strong>; the close <strong>decides</strong>.</p></div>
+  </div>
+  <div class="notes" data-note="closerule">Drill this: ask the room "what is the close?" before you let anybody say a
+    number out loud for the rest of the course. On the desk, the readout that enforces it is
+    <b>Acceptance</b> (yes / no) on every event, and <b>Close accept</b> in the swings table.</div>
+</section>
+
+<!-- 6 -->
+<section class="slide" id="s6" data-t="0:06">
+  <div class="kicker">Part 1 - chart example 1 · real tape</div>
+  <h2>Election results, 4 June 2024: Nifty fell ~1,900 points intraday and closed ~1,300 down</h2>
+  <div class="cols c2">
+    <div>
+      <svg id="svgElection" viewBox="0 0 420 340" role="img" aria-label="Nifty 50 candle for 4 June 2024 from real OHLC"></svg>
+      <div class="cap"><span class="tag real">real data</span> ^NSEI daily OHLC, 2024-06-04 · previous close 2024-06-03.
+        Drawn from the numbers, not traced from a picture.</div>
+    </div>
+    <div>
+      <h3>Read the bar, then read the story</h3>
+      <table>
+        <tbody>
+          <tr><td>Previous close (3 Jun)</td><td class="num">23,263.90</td></tr>
+          <tr><td>Open / day high</td><td class="num">23,179.50</td></tr>
+          <tr><td>Session low</td><td class="num">21,281.45</td></tr>
+          <tr class="hi"><td><strong>Close</strong></td><td class="num"><strong>21,884.50</strong></td></tr>
+          <tr><td>Fall from open to low</td><td class="num">1,898.05 pts</td></tr>
+          <tr><td>Close vs previous close</td><td class="num">-1,379.40 pts (-5.93%)</td></tr>
+          <tr><td>Close vs open</td><td class="num">-1,295.00 pts</td></tr>
+          <tr><td>Bought back off the low</td><td class="num">603.05 pts</td></tr>
+          <tr><td>Volume that day</td><td class="num">1,006,100 (2x the prior bar)</td></tr>
+        </tbody>
+      </table>
+      <ul class="tight">
+        <li>Panic printed <strong>1,898</strong> points. The settled result was <strong>1,300</strong>. The 600-point
+          gap is the difference between the number that makes headlines and the number that makes you money.</li>
+        <li>Next day (5 Jun) closed <strong>22,620.35</strong> - 735 points above the result-day close. Anyone who sold
+          the low of the 4th and did not re-check the close was on the wrong side of the next session.</li>
+        <li>Note the candle shape: open equals high. There is <strong>no upper wick at all</strong>. That is a
+          one-directional auction, and it still ended 600 points off its low.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="slide" id="s7" data-t="0:05">
+  <div class="kicker">Part 1 - chart example 2 · real tape</div>
+  <h2>Nifty Auto peaked Sep 2024, fell for months, and bottomed on 7 April 2025 - on tariff day</h2>
+  <div class="cols c2">
+    <div>
+      <svg id="svgAuto" viewBox="0 0 460 300" role="img" aria-label="Nifty Auto closes and volume through the April 2025 tariff bottom"></svg>
+      <div class="cap"><span class="tag real">real data</span> ^CNXAUTO daily closes (upper panel) and volume (lower
+        panel), 2025-03-20 to 2025-04-17. Seven bars either side are shown so you can see the <em>comparison</em>,
+        which is the whole lesson.</div>
+    </div>
+    <div>
+      <h3>The numbers behind the sentence</h3>
+      <table>
+        <tbody>
+          <tr><td>Index peak (close basis)</td><td class="num">27,610.75 on 2024-09-27</td></tr>
+          <tr><td>Trough close</td><td class="num">19,815.55 on 2025-04-07</td></tr>
+          <tr class="hi"><td><strong>Decline</strong></td><td class="num">-28.2% over 192 calendar days</td></tr>
+          <tr><td>Day the US tariff notice landed</td><td class="num">Wed 2025-04-02</td></tr>
+          <tr><td>Day the selling actually ended</td><td class="num">Mon 2025-04-07</td></tr>
+          <tr><td>Apr 7 volume</td><td class="num">1,049,800</td></tr>
+          <tr><td>Median volume, prior 6 bars</td><td class="num">~511,700</td></tr>
+          <tr><td>Ratio (the desk's RVOL)</td><td class="num">~2.05x</td></tr>
+          <tr><td>Close 8 sessions later (17 Apr)</td><td class="num">21,373.10 (+7.9% off the bottom close)</td></tr>
+        </tbody>
+      </table>
+      <div class="card up"><p><strong>Two teaching points in one bar.</strong> First, the headline was 2 April and the
+        bottom was 7 April - price discounts everything, but not on the day you read it. Second, the bottom printed on
+        roughly double the volume of the bars around it. Capitulation is a <em>volume</em> event you can see without
+        any news at all.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="slide" id="s8" data-t="0:05">
+  <div class="kicker">Part 1 - priced early vs knee-jerk</div>
+  <h2>The same rule, three different events</h2>
+  <div class="cols c3">
+    <div class="card down"><h3>Sugar / ethanol, Jan-Feb 2026</h3>
+      <p>Sugar-linked stocks bottomed in <strong>January / February</strong>, <em>before</em> the Hormuz closure moved
+        the ethanol story. Nobody can use that in a trade - but it is the proof of the axiom: the money that could
+        act, acted early, and the "obvious" catalyst arrived into a price that had already turned.</p>
+      <p class="num" style="color:var(--mute)">Verify in class: desk, custom window, AMDIND.NS / BALRAMCHEM.NS,
+        1D bars, Jan-Jun - mark the low before you mention the event.</p></div>
+    <div class="card up"><h3>Nifty, March 2020 lockdown</h3>
+      <p>The genuine shock. Lockdown announced <strong>Fri 20 Mar 2020</strong>, effective the 23rd. Index low in this
+        window printed <strong>7,511.10 on 24 Mar</strong>; close basis bottomed <strong>7,610.25 on 23 Mar</strong>.
+        Then 8,317.85 on <strong>25 Mar</strong> - <strong>+9.3% in two sessions</strong> from the panic close.</p>
+      <p>A natural-disaster-class shock makes the knee-jerk dip and recovers. That is exactly what the tape did.</p></div>
+    <div class="card warn"><h3>Elections, June 2024</h3>
+      <p>Man-made, expected, dated in advance - and the <em>surprise</em> result still produced a close 600 points off
+        the low and a full recovery the next day.</p>
+      <p>Compare the two shapes: election day was a <strong>one-way auction that settled</strong>; 2020 was a
+        <strong>capitulation that reversed</strong>. Different trade plans, and the difference is visible in the bars.</p></div>
+  </div>
+  <div class="notes" data-note="events">The 2020 numbers above are from this feed's ^NSEI daily series
+    (9-31 Mar 2020): low of window <b>7,511.10</b> on 24 Mar, close low <b>7,610.25</b> on 23 Mar, and 8,317.85 on
+    25 Mar. Do not quote a different "2020 bottom" from memory in the same breath - pick one source and stay inside
+    it for the hour.</div>
+</section>
+
+<!-- 9 -->
+<section class="slide" id="s9" data-t="0:03">
+  <div class="kicker">Part 1 - the discipline</div>
+  <h2>Stop collecting reasons. Reasons are how losses get justified.</h2>
+  <div class="cols c2">
+    <div>
+      <ul class="tight">
+        <li><strong>Price first, story second, and if the story contradicts the price, drop the story.</strong></li>
+        <li>Searching for the "why" after a loss feels like work. It is usually the beginning of an excuse:
+          "it fell because of FII selling" tells you nothing about the next bar and frees you to repeat the trade.</li>
+        <li>The cause-hunt has a worse cost: it moves your exit. You start holding a broken structure because
+          "fundamentally nothing changed". Fundamentally, the close did change. That is the signal.</li>
+        <li>Journal column is <em>what price did</em>, not <em>what I read</em>.</li>
+      </ul>
+    </div>
+    <div class="card info"><h3>Where news legitimately belongs</h3>
+      <p>As a <strong>calendar</strong>, never as a forecast. You already know the dates: RBI policy, the monthly
+      auto sales releases, the budget, quarterly results. Those dates are when an <em>already compressed</em> price
+      gets its chance to expand. Mark the date, form no view on the outcome, and trade the reaction off the close.</p>
+      <p class="num" style="color:var(--mute);margin-top:8px">Desk: put the window on the instrument, note the range
+      compression in the readout, then wait for the acceptance decision on the day.</p></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section class="slide" id="s10" data-t="0:10">
+  <div class="kicker">Q&amp;A block 1 - before we move to trends</div>
+  <h2>Questions I expect on using price over news</h2>
+  <div class="cols c2">
+    <div>
+      <div class="qa"><p class="q">If price discounts everything, why do I need to know anything about the company?</p>
+        <p class="a">You need to know <em>what is trading</em> - liquidity, circuit limits, expiry behaviour, the
+        session it respects. You do not need the thesis. The thesis is what the people on the other side of your
+        trade already paid for.</p></div>
+      <div class="qa"><p class="q">Results are out and the stock fell 8%. The numbers were fine. Why?</p>
+        <p class="a">Because auto companies publish <strong>monthly sales on the 1st</strong>, so by the time the
+        quarterly number arrives, volumes - the part that actually moves an auto or FMCG print - have been known for
+        three months. The "surprise" was priced in three separate installments. Check the structure before the print,
+        not the print.</p></div>
+      <div class="qa"><p class="q">But RBI / budget moves the market. That is news causing price.</p>
+        <p class="a">Track the <strong>policy calendar</strong>. Events act as <em>triggers</em> for price that is
+        already compressed - they decide <em>when</em> an expansion starts, not <em>whether</em> the trend was there.
+        A coin-flip release into a 4-week contracting range is a setup. The same release after a 30% run is a
+        distribution day.</p></div>
+    </div>
+    <div>
+      <div class="qa"><p class="q">Give us the scanner. And the indicator settings. And the book list.</p>
+        <p class="a">They exist and they are ready. I release them <strong>one topic at a time</strong>, because a
+        scanner in front of someone who cannot label a higher low is a way to lose money faster. This week is the
+        eye. The tools follow the eye.</p></div>
+      <div class="qa"><p class="q">So never read the news?</p>
+        <p class="a">Read it for the <em>calendar</em> and for the <em>universe</em> (what is even in play). Never for a
+        reason to hold. The moment you can name the reason you are holding, ask whether that reason was in the price
+        before you formed it.</p></div>
+      <div class="qa"><p class="q">What if the close is manipulated / gap up at the open ruins my level?</p>
+        <p class="a">The close is the settlement, not the auction, so it is the least gameable single number in the
+        day - and the one that decides the daily chart everyone else is watching. Gaps get their own session; today's
+        rule still applies: the first bar after a gap is information, the close of the day is the instruction.</p></div>
+      <div class="notes" data-note="qa1">If the room goes quiet, ask them for a loss they can explain with news. Then
+        ask what the close did on that day. This lands harder than anything on this slide.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 -->
+<section class="slide" id="s11" data-t="0:04">
+  <div class="kicker">Part 2 - the three trends</div>
+  <h2>Same direction, three different clocks</h2>
+  <div class="cols c3">
+    <div class="card up"><h3>Primary · the tide</h3>
+      <p class="num" style="color:var(--accent)">monthly chart · runs for years</p>
+      <p>This is the trend you are allowed to be long into. India's is <strong>bullish</strong>: about
+      <strong>2,800</strong> in the 2008 crisis window (Oct 2008 close <span class="num">2,755.10</span>) to about
+      <strong>23,000</strong> today (last close <span class="num">22,597.50</span>, Oct 2026).</p>
+      <p>Roughly <strong>8x</strong> across the period, with two multi-year declines inside it that felt like the end
+        of the market at the time.</p></div>
+    <div class="card warn"><h3>Secondary · the correction</h3>
+      <p class="num" style="color:var(--accent)">18 to 24 months, runs against the primary</p>
+      <p>The long counter-move inside the tide. <strong>Nifty is currently in a secondary downtrend</strong>: peak close
+      <span class="num">26,203</span> (Oct 2025) to <span class="num">22,597</span> (Oct 2026), about
+      <strong>-14%</strong>, on the monthly bars.</p>
+      <p>Trade it, but never call it the trend. This is the one that makes people say "the bull run is over".</p></div>
+    <div class="card down"><h3>Minor · the ripple</h3>
+      <p class="num" style="color:var(--accent)">under 3 weeks · daily chart, 6+ months of data</p>
+      <p>What you actually enter on. Only taken <strong>in the direction of the primary</strong>. Under three weeks,
+      and it is noise if you look at it on a 3-minute chart.</p></div>
+  </div>
+  <div class="notes" data-note="three">Insist on the wording: <b>primary is what you believe, minor is what you
+    trade, secondary is what tries to separate you from both.</b> Also say out loud that a monthly chart of India
+    starting around 2007 is all this feed gives us - anything older is somebody's memory, including mine.</div>
+</section>
+
+<!-- 12 -->
+<section class="slide" id="s12" data-t="0:03">
+  <div class="kicker">Part 2 - the definition you will use every day</div>
+  <h2>Higher highs and higher lows, or get out of the way</h2>
+  <div class="cols c2">
+    <div>
+      <svg id="svgUp" viewBox="0 0 420 230" role="img" aria-label="Schematic uptrend: higher highs and higher lows"></svg>
+      <div class="cap"><span class="tag schema">schematic</span> Uptrend = higher high + higher low, both confirmed by
+        the close. The dashed line is the fitted trendline through the close-backed lows.</div>
+    </div>
+    <div>
+      <svg id="svgDown" viewBox="0 0 420 230" role="img" aria-label="Schematic downtrend: lower highs and lower lows"></svg>
+      <div class="cap"><span class="tag schema">schematic</span> Downtrend = lower high + lower low.
+        <strong>Stay away</strong> from longs in it - the course says stay away, not "wait for a reason".</div>
+    </div>
+  </div>
+  <div class="cols c2" style="margin-top:6px">
+    <div class="card"><p><strong>Four labels, no more.</strong> HH, HL, LH, LL - plus EQH / EQL when the level is
+      roughly flat. If a swing cannot be labelled, it is not a swing yet.</p></div>
+    <div class="card info"><p><strong>Equal is not new.</strong> Two highs at the same price is a level being tested.
+      Repeated tests on falling volume is where breakdowns come from; that is Part 3.</p></div>
+  </div>
+</section>
+
+<!-- 13 -->
+<section class="slide" id="s13" data-t="0:04">
+  <div class="kicker">Part 2 - chart example 3 · real tape</div>
+  <h2>The three trends on one chart, and the 8-year rhythm in the data</h2>
+  <div class="cols c2">
+    <div>
+      <svg id="svgTrends" viewBox="0 0 460 300" role="img" aria-label="Schematic of a primary uptrend containing a secondary decline and minor swings"></svg>
+      <div class="cap"><span class="tag schema">schematic</span> One primary up-leg containing one 18-24 month
+        secondary decline, with minor swings inside it. This is the shape of "bull market that has been painful for a
+        year".</div>
+    </div>
+    <div>
+      <h3>What the index data actually shows</h3>
+      <table>
+        <thead><tr><th>Role</th><th>Bar</th><th class="num">Level</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="4">Major <strong>peaks</strong></td><td>Nov 2010</td><td class="num">6,135</td></tr>
+          <tr><td>Jan 2015</td><td class="num">8,845</td></tr>
+          <tr><td>Aug 2024</td><td class="num">25,811</td></tr>
+          <tr><td>Oct 2025</td><td class="num">26,203</td></tr>
+          <tr><td rowspan="4">Major <strong>troughs</strong></td><td>Oct 2008</td><td class="num">2,755</td></tr>
+          <tr><td>Nov 2011</td><td class="num">4,624</td></tr>
+          <tr><td>Jan 2016</td><td class="num">6,987</td></tr>
+          <tr><td>Feb 2020</td><td class="num">8,598</td></tr>
+          <tr class="hi"><td>Now</td><td>Oct 2026 close</td><td class="num">22,597.50</td></tr>
+        </tbody>
+      </table>
+      <div class="card warn"><p><strong>On the 8-year cycle.</strong> It is taught as peaks at 1992, 2000, 2008, 2016,
+        2024. Two honest caveats before you put it on a slide for anyone: this feed's monthly history
+        <em>starts Sep 2007</em>, so 1992 and 2000 cannot be shown here; and inside the data we do have, the 8-year
+        marks are <strong>Oct 2008 (a low)</strong>, <strong>Jan 2016 (a low)</strong> and
+        <strong>Aug 2024 (a high)</strong>. The spacing is real. The <em>sign</em> alternates - so teach it as
+        "expect a significant turn near the 8-year mark", not "expect a top".</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 14 -->
+<section class="slide" id="s14" data-t="0:03">
+  <div class="kicker">Part 2 - how to use the three trends</div>
+  <h2>One rule, and the chart sizes it forbids</h2>
+  <div class="rule"><strong>Trade the minor trend only in the direction of the primary trend.</strong> That single
+    sentence is a position-sizing rule, an exit rule and a "do nothing" rule at the same time.</div>
+  <table>
+    <thead><tr><th style="width:150px">Clock</th><th style="width:200px">Chart</th><th>What you do with it</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Primary</strong></td><td>Monthly bars, years of data</td><td>Decide which side of the market you are allowed to be on. India: bullish. Set it once, re-check monthly, do not re-litigate it daily.</td></tr>
+      <tr><td><strong>Secondary</strong></td><td>Weekly / daily over 1-2 years</td><td>Size down and expect the counter-move to run 18-24 months. Current Nifty: secondary downtrend, so longs get smaller and exits get faster.</td></tr>
+      <tr><td><strong>Minor</strong></td><td>Daily, <strong>at least 6 months</strong> of bars</td><td>Where entries and stops live. Six months minimum because a shorter window cannot show you whether the last high was actually a higher high.</td></tr>
+      <tr class="hi"><td>Not today</td><td>3-minute and 5-minute charts</td><td><strong>Avoid them early in a career.</strong> On a 3-minute chart almost every pivot is a tick artefact, volume confirmation is meaningless, and the primary trend is invisible. You will build the wrong reflex.</td></tr>
+    </tbody>
+  </table>
+  <div class="notes" data-note="clocks">The desk enforces the "6 months" idea in two places: the swing overlay only
+    labels the recent 60% of the tape, and the <b>Trendlines</b> readout refuses to draw when the swing scatter is too
+    noisy - it prints the fit score instead of pretending. Say that a tool which refuses to answer is a tool that is
+    telling you something.</div>
+</section>
+
+<!-- 15 -->
+<section class="slide" id="s15" data-t="0:02">
+  <div class="kicker">Part 2 - when the answer is "no trade"</div>
+  <h2>Voltas: the correct decision was to be an observer</h2>
+  <div class="cols c2">
+    <div class="card"><h3>The pattern</h3>
+      <p>Highs and lows that refuse to align - a higher high with a higher low that the close does not defend, or a
+      lower high against a higher low. The structure is <strong>mixed</strong>, and mixed is not a signal in either
+      direction. It is information that you do not have an edge today.</p>
+      <p>On the desk, mixed prints as a compression or contraction title with a middling score, and the pending list
+      fills up with items whose reasons read <em>"acceptance run 1 of 2 bars"</em>.</p></div>
+    <div class="card up"><h3>Why staying flat is a position</h3>
+      <p>Observing costs nothing and keeps your size available for the clean one. Every forced trade inside a mixed
+      structure borrows from the capital and the attention you will need when the trend resolves.</p>
+      <p>Say the sentence exactly: <strong>"I am allowed to not have an opinion."</strong> Most of the room will hear
+      that for the first time.</p></div>
+  </div>
+  <div class="notes" data-note="voltas">Live demo if you want the real bar: desk, <b>VOLTAS.NS</b>, chip
+    <b>1D - 6M</b>, then walk the swings table and show that the last high and last low disagree. Do not name a
+    price target for it. The point of the Voltas example is the absence of a decision, not a call.</div>
+</section>
+
+<!-- 16 -->
+<section class="slide" id="s16" data-t="0:04">
+  <div class="kicker">Part 2 - reading your own chart honestly</div>
+  <h2>Four failure modes, in the order people meet them</h2>
+  <div class="cols c2">
+    <div>
+      <div class="qa"><p class="q">"I see higher highs but no higher lows."</p>
+        <p class="a">That is not an uptrend, that is an uptrend with a widening base. It is a warning, and it usually
+        resolves down. Require <em>both</em> sides - which is exactly why the desk refuses to publish a bull score
+        unless there is a readable pair on each side.</p></div>
+      <div class="qa"><p class="q">"The chart looks the same at 1D-1M and 1Y-5W."</p>
+        <p class="a">Then you have not zoomed out far enough to see which trend you are in. Always label on the
+        6-12 month daily tape first, then decide the entry on the minor.</p></div>
+    </div>
+    <div>
+      <div class="qa"><p class="q">"The wick made a new high, so it is a higher high, right?"</p>
+        <p class="a">Only if the close defends it. Wick-only pivots are drawn and tagged, but they do not become the
+        level you hide a stop behind. That is the close-weighting rule doing its job.</p></div>
+      <div class="qa"><p class="q">"Can I mark the trend myself with two points?"</p>
+        <p class="a">Not on this course. Two arbitrary points fit any tape. Our trendline goes through
+        <strong>close-backed swing pivots</strong> - at most the last six on each side - and it needs an R-squared of
+        <strong>0.5</strong> or better to be drawn at all. Below that, the readout says so instead of flattering you.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 17 -->
+<section class="slide" id="s17" data-t="0:05">
+  <div class="kicker">Part 3 - volume confirms the trend</div>
+  <h2>The rule, stated the way you will use it</h2>
+  <div class="rule">Volume should <strong>rise</strong> when price takes out a previous high or a previous low.
+    If it does not, the break is a <strong>candidate</strong>, not a signal.</div>
+  <div class="cols c3">
+    <div class="card up"><h3>Confirming a breakout</h3>
+      <p>Price closes above the prior swing high <em>and</em> volume expands versus the bars immediately before it.
+      Then hold: the follow-through has to keep the level on closes, not on one bar.</p></div>
+    <div class="card down"><h3>Confirming a breakdown</h3>
+      <p>Same test, downward: a close through the prior swing low on expanding volume. Breakdowns are quicker than
+      breakouts - fear needs less participation than greed.</p></div>
+    <div class="card warn"><h3>The false break</h3>
+      <p>Price pokes through the level, volume does not cooperate, and the close comes back inside. Now you own the
+      best short of the day (or the best exit of a long). <strong>Failed break &gt; no trade.</strong></p></div>
+  </div>
+  <div class="cols c2" style="margin-top:4px">
+    <div class="card info"><h3>How to judge volume without a formula</h3>
+      <p>Look at the volume bar and compare it with the <strong>last 5 to 6 bars</strong> by eye. Is it clearly
+      taller than the neighbours? That is the whole test, and it works on any charting platform in the world.
+      Our desk formalises it as <strong>RVOL</strong> - volume divided by the median of the last 20 bars - because
+      eyeballing drifts when the tape is quiet, and because a number can be argued about while a feeling cannot.</p></div>
+    <div class="card"><h3>Ignore the colour of the volume bar</h3>
+      <p>Green and red volume bars are an <strong>app gimmick</strong>. They are typically coloured by the bar's own
+      open-to-close direction, which tells you about the body of one candle and nothing about participation. Two
+      identical 3-million-share days get painted opposite colours depending on a 40-point range. Judge
+      <strong>height</strong>, never hue.</p></div>
+  </div>
+</section>
+
+<!-- 18 -->
+<section class="slide" id="s18" data-t="0:05">
+  <div class="kicker">Part 3 - chart example 4 · real tape</div>
+  <h2>Reliance: ten break attempts, and only three of them were real</h2>
+  <p class="lead">Every row below is a genuine output of the desk on RELIANCE.NS daily bars, 1 Oct 2024 - 26 Oct 2026.
+     The engine never had the option to be nice about it.</p>
+  <table>
+    <thead><tr><th>Date</th><th>Side / level</th><th class="num">Close</th><th class="num">RVOL</th><th class="num">Bars held</th><th>Verdict and reason</th></tr></thead>
+    <tbody>
+      <tr class="hi"><td>28 Sep 2026</td><td>Down through 1,226.40</td><td class="num">1,197.60</td><td class="num">1.30x</td><td class="num">2</td><td><strong>CONFIRMED breakdown.</strong> Volume expanded and the level stayed lost on closes.</td></tr>
+      <tr class="hi"><td>6 Apr 2026</td><td>Down through 1,363.50</td><td class="num">1,304.70</td><td class="num">1.45x</td><td class="num">2</td><td><strong>CONFIRMED breakdown.</strong> Both tests passed.</td></tr>
+      <tr><td>29 Apr 2026</td><td>Up through 1,373.00</td><td class="num">1,425.40</td><td class="num">1.42x</td><td class="num">2</td><td><strong>CONFIRMED breakout</strong> - one day after the failed attempt below.</td></tr>
+      <tr><td>28 Apr 2026</td><td>Up through 1,373.00</td><td class="num">1,388.90</td><td class="num">1.95x</td><td class="num">1</td><td><em>Not yet.</em> Volume was fine; "acceptance run 1 of 2 bars". Waiting one bar cost nothing and avoided a first-day stop-out.</td></tr>
+      <tr><td>4 Jun 2026</td><td>Down through 1,312.60</td><td class="num">1,303.70</td><td class="num">1.59x</td><td class="num">1</td><td><em>Rejected.</em> "Closed in the upper half of the bar - a wick probe, not acceptance." <strong>The close said no</strong> even though volume said yes.</td></tr>
+      <tr><td>8 Jul 2026</td><td>Down through 1,290.00</td><td class="num">1,275.90</td><td class="num">1.42x</td><td class="num">1</td><td><em>Not yet.</em> Volume passed, one bar short of the two-close requirement.</td></tr>
+      <tr><td>28 Jul 2026</td><td>Down through 1,271.60</td><td class="num">1,267.70</td><td class="num">0.74x</td><td class="num">1</td><td><em>Rejected.</em> "RVOL 0.74x vs 1.3x required." Price moved, participation did not show up.</td></tr>
+      <tr><td>27 Aug 2026</td><td>Down through 1,298.10</td><td class="num">1,282.20</td><td class="num">1.25x</td><td class="num">1</td><td><em>Rejected.</em> RVOL 1.25x - just under the bar, and the level was never lost.</td></tr>
+      <tr><td>11 Sep 2026</td><td>Down through 1,271.00</td><td class="num">1,257.50</td><td class="num">0.88x</td><td class="num">1</td><td><em>Rejected.</em> RVOL 0.88x. Two of the three fails on volume alone - so the volume test is not decoration.</td></tr>
+      <tr><td>24 Sep 2026</td><td>Down through 1,226.40</td><td class="num">1,219.20</td><td class="num">1.38x</td><td class="num">1</td><td><em>Not yet.</em> Volume OK, one bar short. It confirmed four sessions later.</td></tr>
+    </tbody>
+  </table>
+  <div class="notes" data-note="reliance">The punchline to say out loud: <b>ten attempts, three confirmed.</b> Of the
+    seven that were not confirmed, <b>three failed on volume alone</b> (0.74x, 0.88x, 1.25x), <b>three failed on
+    persistence</b> ("acceptance run 1 of 2 bars"), and <b>one failed on the close itself</b> - the 4 Jun wick probe
+    that broke the level and closed back in the upper half. Each one was visibly incomplete before that session
+    ended. That is what "never treat an unconfirmed move as a signal" is worth in rupees.</div>
+</section>
+
+<!-- 19 -->
+<section class="slide" id="s19" data-t="0:03">
+  <div class="kicker">Part 3 - the shape of the two cases</div>
+  <h2>True breakout versus false breakout</h2>
+  <div class="cols c2">
+    <div>
+      <svg id="svgTrue" viewBox="0 0 420 250" role="img" aria-label="Schematic true breakout with rising volume"></svg>
+      <div class="cap"><span class="tag schema">schematic</span> Prior high taken out on a close, with volume bars
+        stepping above their neighbours. The follow-through keeps the level.</div>
+    </div>
+    <div>
+      <svg id="svgFalse" viewBox="0 0 420 250" role="img" aria-label="Schematic false breakout on shrinking volume"></svg>
+      <div class="cap"><span class="tag schema">schematic</span> Same price poke, <strong>smaller</strong> volume than
+        the bars before it, and the close back inside the range. That is a trap, and it is a trade.</div>
+    </div>
+  </div>
+  <div class="card up"><p><strong>What to actually do with the difference.</strong> Confirmed: enter on the close or
+    the next bar's retest, stop behind the broken level, target measured off the prior range. Unconfirmed: <em>no
+    entry</em> - it goes on the watch list, and if the next two closes come back inside, you are allowed to fade it.
+    Never confuse the two states in the journal; they are different trades with different sizes.</p></div>
+</section>
+
+<!-- 20 -->
+<section class="slide" id="s20" data-t="0:03">
+  <div class="kicker">Part 3 - duration tells you which trend you are in</div>
+  <h2>A 1-2 year decline is a correction. A bear market lasts many years.</h2>
+  <div class="cols c2">
+    <div class="card warn"><h3>The confusion that wrecks portfolios</h3>
+      <p>A stock (or an index) that has come down for <strong>1 to 2 years while its primary trend is still
+      bullish</strong> is in a <em>secondary</em> move. It is not the end of anything. People who call it a bear
+      market sell the bottom of a tide that is still up - Nifty Auto above: <strong>-28% in 192 days</strong>, then
+      <strong>+7.9% in eight sessions</strong> off the bottom close.</p></div>
+    <div class="card down"><h3>What a real bear market looks like</h3>
+      <p>A bear is measured in <strong>many years</strong>, with the primary trend itself turning down: lower highs and
+      lower lows on the <em>monthly</em> bars, not the daily ones. That is the Arcom-class example - a decline long
+      enough that the monthly structure changes its labels, and the correct answer for the whole period is "stay
+      away", not "buy the dip".</p></div>
+  </div>
+  <div class="notes" data-note="arcom">Speaker check before class: I could not resolve the ticker behind
+    <b>"Arcom"</b> in this feed, and the transcript already turned "Dow" into "doubt" once. Confirm the name and its
+    exchange suffix so this row can be demonstrated live in the desk instead of described.</div>
+  <table>
+    <thead><tr><th style="width:190px">What you see</th><th style="width:150px">Trend it belongs to</th><th>Correct behaviour</th></tr></thead>
+    <tbody>
+      <tr><td>3 weeks of falls, daily labels still HH/HL</td><td>Minor</td><td>Normal pullback. Add or hold. Do not re-decide the thesis.</td></tr>
+      <tr><td>12-24 months down, monthly trend intact</td><td>Secondary</td><td>Size down, prefer the counter-trend trade to the dip buy, expect it to end on a volume thrust like Apr 2025.</td></tr>
+      <tr><td>Several years, monthly LH/LL</td><td>Primary, reversed</td><td>Stay away from longs. This is the only row where "it looks cheap" is irrelevant.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 21 -->
+<section class="slide" id="s21" data-t="0:05">
+  <div class="kicker">Part 3 - volume practice</div>
+  <h2>Three drills on real tape, in this order</h2>
+  <div class="cols c3">
+    <div class="card"><h3>Drill 1 - eyeball it first</h3>
+      <p>Pull up any chart. Cover the numbers. Ask: <em>is the volume bar at that break clearly taller than the five
+      before it?</em> Yes or no, from the eye. Then and only then read RVOL. The eye has to work without the
+      crutch - it is the only tool that transfers to a broker terminal.</p></div>
+    <div class="card"><h3>Drill 2 - find the failed one</h3>
+      <p>Scroll until you find a break of a prior high where volume was <em>flat or lower</em> and the close came back
+      inside. Mark it. Now find the next bar. Most of these give you a bigger move in the opposite direction than the
+      break itself did.</p></div>
+    <div class="card"><h3>Drill 3 - chase the persistence</h3>
+      <p>A high RVOL bar means nothing if the following two closes fall back inside the range. The desk counts this
+      explicitly (<em>sustain</em>). Find a thrust where volume spiked but nothing held - that is a one-day event, and
+      it is not a trend.</p></div>
+  </div>
+  <div class="notes" data-note="drills">Run drill 1 live with the room. Do not narrate the answer; ask two people for
+    theirs before you show RVOL. The disagreement you will hear is the reason the metric exists.</div>
+</section>
+
+<!-- 22 -->
+<section class="slide" id="s22" data-t="0:02">
+  <div class="kicker">Part 3 - the one-page summary of volume</div>
+  <h2>Six sentences</h2>
+  <div class="rule">1. Volume confirms direction; it does not create it.</div>
+  <ul class="tight" style="font-size:19px">
+    <li>2. Test it at a <strong>break of a prior swing high or low</strong>, not in the middle of a range.</li>
+    <li>3. Compare against the <strong>last 5-6 bars</strong> by eye; RVOL against a 20-bar median to be arguable.</li>
+    <li>4. The <strong>close</strong> must accept the level. Wick through it is a probe.</li>
+    <li>5. <strong>Two more closes</strong> to keep it - one bar is a spike, not a run.</li>
+    <li>6. Unconfirmed means <strong>no position</strong>. It does not mean "small position".</li>
+  </ul>
+</section>
+
+<!-- 23 -->
+<section class="slide" id="s23" data-t="0:10">
+  <div class="kicker">Live demonstration - the desk</div>
+  <h2>Exact click paths, in the order I will run them</h2>
+  <p>App: <span class="path">D:\BTS\market-structure-desk\Start Structure Desk.bat</span> (double-click; it starts the
+     local server and opens <span class="num">http://127.0.0.1:8931/</span>). Set the ticker in the search box, then
+     the timeline chip. Everything below is real tape from the venue that owns the symbol. This deck has its own
+     live chart on the next slide, opened from <span class="path">D:\BTS\lectures\Start Lectures.bat</span>
+     (<span class="num">http://127.0.0.1:8952/</span>) - it pulls quotes every 3 seconds.</p>
+  <table>
+    <thead><tr><th style="width:56px">#</th><th style="width:230px">Type / click</th><th>What to point at</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><span class="num">^NSEI</span> - chip <strong>10M</strong> (monthly)</td>
+        <td>The primary trend on one screen: about 2,800 (Oct 2008) to 22,597 (Oct 2026), with the multi-year
+        declines inside it. Ask where the tide is before anything else.</td></tr>
+      <tr><td class="num">2</td><td><span class="num">^NSEI</span> - chip <strong>1D - 6M</strong></td>
+        <td>The secondary downtrend in daily labels: lower highs, lower lows, and the <em>Trendline - highs</em>
+        readout. Contrast with #1 - same instrument, opposite answer, because the clocks differ.</td></tr>
+      <tr><td class="num">3</td><td><span class="num">RELIANCE.NS</span> - chip <strong>1Y</strong></td>
+        <td>Bearish structure, both trendlines drawn (highs ~1,245 R2 0.81, lows ~1,181 R2 0.68). Then walk the
+        events table to slide 18's rows and show <em>why</em> each unconfirmed one failed.</td></tr>
+      <tr><td class="num">4</td><td>Custom window <strong>2025-03-20 &rarr; 2025-04-17</strong>, interval 1d, symbol
+        <span class="num">^CNXAUTO</span></td><td>The tariff bottom with volume under it. Point at Apr 7: the tallest
+        bar in the window and the low. This is Part 1 and Part 3 in one frame.</td></tr>
+      <tr><td class="num">5</td><td>Custom window <strong>2024-06-01 &rarr; 2024-06-07</strong>, symbol
+        <span class="num">^NSEI</span></td><td>The election candle for real, then the recovery bar. Toggle
+        <strong>Close-weighted pivots</strong> off and on to show what the wick alone would have told you.</td></tr>
+      <tr><td class="num">6</td><td>Any symbol, chip <strong>1m</strong>, then <strong>1D - 6M</strong></td>
+        <td>Why minute charts are useless for this: the trendline readout refuses to draw on the 1m tape
+        ("too noisy to draw"). Let the tool argue the point for you.</td></tr>
+      <tr><td class="num">7</td><td>No chip at all - just load a symbol</td>
+        <td>The live view: default timeline, polling, chart repaints as the traded value changes. Say that this is the
+        only mode where the tape can disagree with your slide, so do it last.</td></tr>
+    </tbody>
+  </table>
+  <div class="notes" data-note="demo">Prep: run the batch file <b>before</b> the class and load every ticker once, so
+    the relay is warm and nobody watches a spinner. If the feed fails on stage, the CSV paste panel takes your saved
+    export and the analysis is identical - say so, it earns more trust than the live feed.</div>
+</section>
+
+<!-- 24 -->
+<section class="slide" id="s-live" data-t="0:06">
+  <div class="kicker">Live tape - real data, re-pulled every 3 seconds</div>
+  <h2>Watch the tape: the extreme <em>touches</em>, the close <strong>decides</strong></h2>
+  <div class="live no-nav">
+    <div class="live-bar">
+      <label class="fld"><span>symbol</span><input id="liveSym" value="^NSEI" spellcheck="false" autocomplete="off"></label>
+      <label class="fld"><span>tape</span><select id="liveIv">
+        <option value="1m">1 minute</option><option value="2m">2 minutes</option>
+        <option value="5m" selected>5 minutes</option><option value="15m">15 minutes</option>
+        <option value="60m">1 hour</option><option value="1d">1 day</option>
+        <option value="1wk">1 week</option></select></label>
+      <label class="fld"><span>window</span><select id="liveRange">
+        <option value="1d">today</option><option value="2d">2 days</option><option value="5d" selected>5 days</option>
+        <option value="1mo">1 month</option><option value="3mo">3 months</option>
+        <option value="6mo">6 months</option><option value="1y">1 year</option></select></label>
+      <button id="liveGo" type="button">load</button>
+      <button id="livePause" type="button">pause tape</button>
+      <span class="chips">presets
+        <button class="chip" type="button" data-sym="^NSEI" data-iv="1m" data-range="1d">Nifty 1m</button>
+        <button class="chip" type="button" data-sym="^NSEI" data-iv="5m" data-range="5d">Nifty 5m</button>
+        <button class="chip" type="button" data-sym="^BSESN" data-iv="5m" data-range="5d">Sensex 5m</button>
+        <button class="chip" type="button" data-sym="RELIANCE.NS" data-iv="5m" data-range="5d">Reliance 5m</button>
+        <button class="chip" type="button" data-sym="^CNXAUTO" data-iv="1d" data-range="1y">Nifty Auto 1d</button>
+        <button class="chip" type="button" data-sym="AAPL" data-iv="5m" data-range="5d">AAPL 5m</button>
+      </span>
+    </div>
+    <div class="live-read">
+      <div><div class="lbl">last</div><div class="price" id="liveLast">--</div></div>
+      <div><div class="lbl">vs prev close</div><div class="kv" id="liveChg">--</div></div>
+      <div><div class="lbl">high / low</div><div class="kv" id="liveHi">--</div></div>
+      <div><div class="lbl">vol: closed bar vs prior 6</div><div class="kv" id="liveVol">--</div></div>
+      <div><div class="lbl">swing pivots (2-bar)</div><div class="kv" id="livePiv">--</div></div>
+      <div><div class="lbl">the desk says</div><div class="kv" id="liveState">--</div></div>
+    </div>
+    <canvas id="liveCv" aria-label="live candlestick and volume tape"></canvas>
+    <div class="live-stat">
+      <span id="liveStat">booting the tape&hellip;</span>
+      <span id="liveMeta"></span>
+    </div>
+  </div>
+  <div class="cols c3">
+    <div class="card warn"><h3>What to point at</h3>
+      <p>The right-hand candle grows and shrinks while the poll runs. It is <strong>not</strong> the number you trade.
+      Watch the <em>close</em> of this bar against the dashed previous close, and the volume bar against the six before
+      it - which is exactly the rule from slides 4 and 18.</p></div>
+    <div class="card info"><h3>Why the tool stays quiet</h3>
+      <p>Nothing here calls a signal. A 1-minute tape produces pivots that the desk refuses to draw a trendline
+      through (<span class="num">too noisy to draw</span>), and that refusal is the lesson: the minor trend on a
+      3-minute chart is noise, not structure.</p></div>
+    <div class="card up"><h3>If the relay dies mid-lecture</h3>
+      <p>The chart keeps the last good bars and the status line goes amber - it will not show you a fake tape.
+      The desk's CSV paste panel takes the same export and analyses it identically, so the session never depends
+      on a third-party proxy.</p></div>
+  </div>
+  <div class="notes" data-note="live">Prep: the tape only moves while the market for that symbol is open, so run this
+    slide <b>live</b> only on a trading day 09:15-15:30 IST - otherwise the last candle freezes and the room notices.
+    Check it ten minutes before class. Poll cadence is fixed at <b>3 seconds</b> per your instruction; the tape button
+    in the bottom-right corner stops it if the relay starts throttling.
+    <b>Do not let this slide become the show.</b> Six minutes, then back to the structure argument - the moving chart
+    is a hook, not the lesson.
+    <b>Volume quirk on this feed:</b> the NSE indices carry no volume series at all on intraday bars, so the readout
+    says "this tape publishes no volume" instead of inventing a bar - click the Reliance chip for Part 3, where the
+    volume actually exists.</div>
+</section>
+
+<!-- 25 -->
+<section class="slide" id="s24" data-t="0:08">
+  <div class="kicker">Open Q&amp;A</div>
+  <h2>Questions on the whole of today</h2>
+  <div class="cols c2">
+    <div>
+      <div class="qa"><p class="q">Dow Theory says the trend is intact until a clear reversal. Where is my line?</p>
+        <p class="a">A confirmed close through the prior swing low on expanding volume. Not a price you liked, not a
+        news item. If you cannot name the bar that would prove you wrong on the chart, you are not in a trend trade -
+        you are in a belief.</p></div>
+      <div class="qa"><p class="q">What if both trendlines point opposite ways?</p>
+        <p class="a">Converging lines are a compression, and compression is a <em>when</em> not a <em>which way</em>.
+        Wait for the break of one of them with volume. This is the Voltas state - be an observer.</p></div>
+      <div class="qa"><p class="q">Is a lower high in a primary uptrend a sell?</p>
+        <p class="a">It is a reason to stop adding and to move your exit closer. A single lower high is not a reversed
+        primary trend; two of them plus a lower low is a secondary decline.</p></div>
+    </div>
+    <div>
+      <div class="qa"><p class="q">How much of this is subjective? Two people labelled the same chart differently today.</p>
+        <p class="a">A lot, at first - which is why we fix the parameters and keep them for the whole course: pivot
+        width, the close weight, the volume threshold, the two-bar acceptance. Disagreement between two people with
+        the same rules is a discussion. Disagreement between two people with different rules is worthless.</p></div>
+      <div class="qa"><p class="q">Can I use this on futures / crypto / US names?</p>
+        <p class="a">The three axioms travel. The details do not: crypto has no settlement close and no session, so
+        the close-weight rule needs replacing; US has pre/post that pollutes pivots. Use it on indices and large-cap
+        equities first.</p></div>
+      <div class="qa"><p class="q">When do we get the scanner?</p>
+        <p class="a">After you can label a chart without the tool. That is the deal from slide 10.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 25 -->
+<section class="slide" id="s25" data-t="0:03">
+  <div class="kicker">Recap board</div>
+  <h2>Write these six lines before you close the laptop</h2>
+  <div class="big" style="font-size:26px;line-height:1.7;font-weight:600">
+    1. Price discounts everything - and it is often <em>early</em>.<br>
+    2. The <strong>close</strong> is the vote. Check it before every decision, even intraday.<br>
+    3. Primary on monthly (years), secondary 18-24 months, minor under 3 weeks.<br>
+    4. Uptrend = higher highs and higher lows. Otherwise, stay away.<br>
+    5. Trade the minor only with the primary.<br>
+    6. Volume must confirm the break. Unconfirmed is not a signal.
+  </div>
+  <div class="card up"><h3>Homework - before Day 3</h3>
+    <p>Pick <strong>five</strong> large-caps across two sectors. For each: label the last four swings with HH/HL/LH/LL
+    on a daily chart with at least 6 months of bars; state the primary trend from a monthly chart; and mark every
+    break of a prior high or low as <em>confirmed</em> or <em>unconfirmed</em> by comparing the volume bar with the
+    five before it. Bring the five sheets. We start Day 3 by comparing labels, and I expect them to disagree.</p></div>
+</section>
+
+<!-- 26 -->
+<section class="slide" id="s26" data-t="0:01">
+  <div class="kicker">Housekeeping before we break</div>
+  <h2>Two minutes of logistics, then ten off</h2>
+  <ul class="tight" style="font-size:19px">
+    <li>Everything on this deck is reproducible: the index and sector numbers came from the same data layer the desk
+      uses, and the confirmed / unconfirmed table is engine output, not my memory.</li>
+    <li>Export what you want: the <strong>JSON</strong> button writes <span class="num">SYMBOL_structure.json</span>
+      including the trendlines, their R-squared and every signal. That is your homework record.</li>
+    <li>No new tools today. The scanners stay where they are.</li>
+  </ul>
+  <div class="notes" data-note="logistics">If you only remember one thing to say here: "the numbers on the slides were
+    pulled from the same feed the app uses, so if you dispute one, we can re-run it in front of you."</div>
+</section>
+
+<!-- 27 -->
+<section class="slide" id="s27" data-t="10:00">
+  <div class="kicker">Break</div>
+  <div class="clock" style="margin-top:6vh">10 minutes</div>
+  <h2>Back at <span class="num" id="backTime">--:--</span>: Day 3 opens with your five sheets</h2>
+  <div class="cols c3" style="margin-top:10px">
+    <div class="card"><h3>While you are up</h3><p>Do not look at a 3-minute chart. It is a rule for the next ten
+      minutes and it will still be a rule for the next ten years.</p></div>
+    <div class="card info"><h3>On return</h3><p>Naming the swing on a blank chart, out loud, one by one. Expect
+      disagreement; expect it to be the most useful twenty minutes of the week.</p></div>
+    <div class="card warn"><h3>If you only take one idea out of today</h3><p>The close is the vote. Everything else
+      in Dow Theory is an argument about who showed up for it.</p></div>
+  </div>
+</section>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ================= slide navigation ================= */
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var ctr = document.getElementById('ctr'), fill = document.getElementById('barFill');
+  var idx = 0;
+  var slideListeners = [];
+
+  function show(n, push) {
+    idx = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, i) { s.classList.toggle('is-on', i === idx); });
+    ctr.textContent = (idx + 1) + ' / ' + slides.length;
+    fill.style.width = ((idx + 1) / slides.length * 100) + '%';
+    if (push !== false) { try { history.replaceState(null, '', '#' + (idx + 1)); } catch (e) {} }
+    window.scrollTo(0, 0);
+    slideListeners.forEach(function (fn) { try { fn(slides[idx], idx); } catch (e) { console.warn('slide hook', e); } });
+  }
+  var isForm = function (t) { return t && /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(t.tagName); };
+  document.addEventListener('keydown', function (e) {
+    if (e.target && (e.target.isContentEditable || isForm(e.target))) return;
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(idx + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'h' || e.key === 'H') toggleHandout();
+    else if (e.key === 'Escape') { if (document.body.classList.contains('handout')) toggleHandout(); }
+  });
+  document.addEventListener('click', function (e) {
+    if (document.body.classList.contains('handout')) return;
+    if (e.target.closest('#hud') || e.target.closest('.notes') || e.target.closest('a') || e.target.closest('.no-nav')) return;
+    show(idx + 1);
+  });
+
+  function toggleHandout() {
+    var on = document.body.classList.toggle('handout');
+    document.body.classList.toggle('deck-nav', !on);
+    document.getElementById('btnHand').textContent = on ? 'deck' : 'handout';
+    show(on ? 0 : idx, false);
+  }
+  document.getElementById('btnHand').addEventListener('click', toggleHandout);
+
+  /* ================= editable, persisted notes ================= */
+  var KEY = 'w1d2-dow-notes-v1';
+  var store = {};
+  try { store = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { store = {}; }
+
+  function noteId(block, slide) { return slide.id + ':' + (block.dataset.note || 'plain'); }
+
+  Array.prototype.forEach.call(document.querySelectorAll('.notes'), function (block) {
+    var slide = block.closest('.slide');
+    var id = noteId(block, slide);
+    block.setAttribute('contenteditable', 'true');
+    block.setAttribute('spellcheck', 'false');
+    if (store[id]) block.innerHTML = store[id];
+    block.addEventListener('input', function () {
+      store[id] = block.innerHTML;
+      try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {}
+    });
+    block.addEventListener('click', function (e) { e.stopPropagation(); });
+  });
+
+  document.getElementById('btnReset').addEventListener('click', function () {
+    if (!confirm('Discard your edits to every notes box on this deck?')) return;
+    store = {}; try { localStorage.removeItem(KEY); } catch (e) {}
+    Array.prototype.forEach.call(document.querySelectorAll('.notes'), function (b) { b.innerHTML = b.dataset.original || ''; });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.notes'), function (b) { b.dataset.original = b.innerHTML; });
+
+  /* ================= real-data chart helpers ================= */
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(name, attrs, parent) {
+    var n = document.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function label(parent, x, y, txt, opts) {
+    opts = opts || {};
+    var t = el('text', { x: x, y: y, fill: opts.fill || '#93a3b7', 'font-size': opts.size || 11,
+      'font-family': opts.mono ? 'Consolas,monospace' : 'Inter,Segoe UI,sans-serif',
+      'text-anchor': opts.anchor || 'start', 'font-weight': opts.weight || 400 }, parent);
+    t.textContent = txt;
+    return t;
+  }
+  var C = { up: '#26b376', down: '#e34f5c', accent: '#f2b53c', info: '#4ba3d8',
+            grid: '#1f2836', grid2: '#2a3546', mute: '#63748a', ink: '#dce6f1' };
+
+  /* ---------- 1. Election day candle, exact OHLC ---------- */
+  (function () {
+    var svg = document.getElementById('svgElection'); if (!svg) return;
+    var d = { prior: 23263.90, open: 23179.50, high: 23179.50, low: 21281.45, close: 21884.50 };
+    var top = 24, h = 258, lo = 21000, hi = 23400;
+    var y = function (v) { return top + (hi - v) / (hi - lo) * h; };
+    [21500, 22000, 22500, 23000].forEach(function (v) {
+      el('line', { x1: 96, x2: 400, y1: y(v), y2: y(v), stroke: C.grid, 'stroke-width': 1 }, svg);
+      label(svg, 4, y(v) + 4, v.toLocaleString('en-US'), { mono: true, size: 10, fill: C.mute });
+    });
+    var cx = 168, w = 62;
+    el('line', { x1: cx, x2: cx, y1: y(d.high), y2: y(d.low), stroke: C.down, 'stroke-width': 2 }, svg);
+    el('rect', { x: cx - w / 2, y: y(d.open), width: w, height: Math.max(2, y(d.close) - y(d.open)),
+      fill: C.down, 'fill-opacity': .85, stroke: C.down }, svg);
+    el('line', { x1: 96, x2: 400, y1: y(d.prior), y2: y(d.prior), stroke: C.info, 'stroke-width': 1, 'stroke-dasharray': '5 4' }, svg);
+    label(svg, 300, y(d.prior) - 6, 'prev close 23,263.90', { size: 10, fill: C.info, anchor: 'end' });
+    label(svg, cx + w / 2 + 8, y(d.open) + 4, 'open = high 23,179.50', { size: 10.5, mono: true, fill: C.ink });
+    label(svg, cx + w / 2 + 8, y(d.close) + 4, 'close 21,884.50', { size: 11.5, mono: true, fill: C.ink, weight: 600 });
+    label(svg, cx + w / 2 + 8, y(d.low) + 4, 'session low 21,281.45', { size: 10.5, mono: true, fill: C.mute });
+    var ax = 330;
+    el('line', { x1: ax, x2: ax, y1: y(d.open), y2: y(d.low), stroke: C.accent, 'stroke-width': 1.4 }, svg);
+    el('line', { x1: ax - 4, x2: ax + 4, y1: y(d.open), y2: y(d.open), stroke: C.accent }, svg);
+    el('line', { x1: ax - 4, x2: ax + 4, y1: y(d.low), y2: y(d.low), stroke: C.accent }, svg);
+    label(svg, ax + 8, (y(d.open) + y(d.low)) / 2 - 4, 'intraday', { size: 10, fill: C.accent });
+    label(svg, ax + 8, (y(d.open) + y(d.low)) / 2 + 9, '-1,898 pts', { size: 10.5, mono: true, fill: C.accent, weight: 600 });
+    label(svg, 96, 305, 'Nifty 50 (^NSEI) 4 Jun 2024 - one bar, drawn from real OHLC', { size: 11, fill: C.mute });
+    el('line', { x1: 96, x2: 400, y1: y(d.close), y2: y(d.close), stroke: C.ink, 'stroke-width': 1, 'stroke-dasharray': '2 3' }, svg);
+    var bx = 74;
+    el('line', { x1: bx, x2: bx, y1: y(d.close), y2: y(d.low), stroke: C.up, 'stroke-width': 1.4 }, svg);
+    label(svg, bx - 6, (y(d.close) + y(d.low)) / 2 + 4, '+603 off the low', { size: 9.5, fill: C.up, anchor: 'end' });
+  })();
+
+  /* ---------- 2. Nifty Auto Mar-Apr 2025: closes + volumes ---------- */
+  (function () {
+    var svg = document.getElementById('svgAuto'); if (!svg) return;
+    var rows = [
+      ['20 Mar', 21623.05, 309500], ['21 Mar', 21756.00, 551000], ['24 Mar', 21938.70, 372300],
+      ['25 Mar', 21737.60, 440400], ['26 Mar', 21742.80, 684400], ['27 Mar', 21516.75, 1163100],
+      ['28 Mar', 21295.50, 592700], ['01 Apr', 21235.25, 360800], ['02 Apr', 21408.85, 291700],
+      ['03 Apr', 21164.00, 511700], ['04 Apr', 20593.15, 880700], ['07 Apr', 19815.55, 1049800],
+      ['08 Apr', 20138.15, 614400], ['09 Apr', 20140.40, 461900], ['11 Apr', 20548.65, 592900],
+      ['15 Apr', 21246.20, 972200], ['16 Apr', 21155.80, 408400], ['17 Apr', 21373.10, 406500]
+    ];
+    var L = 44, R = 452, top = 16, priceH = 150, volTop = 200, volH = 66;
+    var pLo = 19400, pHi = 22200, vMax = 1250000;
+    var n = rows.length, step = (R - L) / n;
+    var x = function (i) { return L + step * (i + 0.5); };
+    var py = function (v) { return top + (pHi - v) / (pHi - pLo) * priceH; };
+    [20000, 21000, 22000].forEach(function (v) {
+      el('line', { x1: L, x2: R, y1: py(v), y2: py(v), stroke: C.grid }, svg);
+      label(svg, 2, py(v) + 3, String(v / 1000) + 'k', { size: 9, mono: true, fill: C.mute });
+    });
+    rows.forEach(function (r, i) {
+      var bh = r[2] / vMax * volH;
+      var isBottom = r[0] === '07 Apr';
+      el('rect', { x: x(i) - step * 0.34, y: volTop + volH - bh, width: step * 0.68, height: bh,
+        fill: isBottom ? C.accent : (r[2] > 700000 ? C.info : C.grid2) }, svg);
+      label(svg, x(i), 286, r[0].slice(0, 2), { size: 8, mono: true, fill: C.mute, anchor: 'middle' });
+    });
+    var pts = rows.map(function (r, i) { return x(i) + ',' + py(r[1]); }).join(' ');
+    el('polyline', { points: pts, fill: 'none', stroke: C.down, 'stroke-width': 2 }, svg);
+    rows.forEach(function (r, i) {
+      el('circle', { cx: x(i), cy: py(r[1]), r: 2.1, fill: C.ink }, svg);
+    });
+    var bi = rows.findIndex(function (r) { return r[0] === '07 Apr'; });
+    el('circle', { cx: x(bi), cy: py(rows[bi][1]), r: 5.5, fill: 'none', stroke: C.accent, 'stroke-width': 2 }, svg);
+    label(svg, x(bi) + 10, py(rows[bi][1]) + 16, '7 Apr close 19,815  V 1.05M = ~2.0x prior bars', { size: 10.5, fill: C.accent, weight: 600 });
+    label(svg, x(rows.findIndex(function (r) { return r[0] === '02 Apr'; })) - 4, py(21408.85) - 12, '2 Apr: tariffs announced', { size: 10, fill: C.info, anchor: 'end' });
+    el('line', { x1: L, x2: R, y1: 190, y2: 190, stroke: C.grid2 }, svg);
+    label(svg, L, 205, 'volume (same x axis)', { size: 9.5, fill: C.mute });
+    el('line', { x1: L, x2: R, y1: volTop + volH, y2: volTop + volH, stroke: C.grid2 }, svg);
+    label(svg, L, 300, 'Nifty Auto (^CNXAUTO) daily closes + volume, 20 Mar - 17 Apr 2025', { size: 10.5, fill: C.mute });
+  })();
+
+  /* ---------- 3. Schematic: HH/HL and LH/LL ---------- */
+  function trendSchematic(id, dir) {
+    var svg = document.getElementById(id); if (!svg) return;
+    el('rect', { x: 0, y: 0, width: 420, height: 230, fill: 'transparent' }, svg);
+    for (var g = 1; g < 5; g++) el('line', { x1: 14, x2: 406, y1: g * 46, y2: g * 46, stroke: C.grid }, svg);
+    var pts = dir === 'up'
+      ? [[30, 170], [70, 108], [120, 150], [170, 82], [220, 128], [272, 58], [322, 104], [378, 36]]
+      : [[30, 52], [70, 116], [120, 74], [170, 142], [220, 100], [272, 172], [322, 132], [378, 196]];
+    el('polyline', { points: pts.map(function (p) { return p.join(','); }).join(' '), fill: 'none',
+      stroke: dir === 'up' ? C.up : C.down, 'stroke-width': 2.2, 'stroke-linejoin': 'round' }, svg);
+    var highs = dir === 'up' ? [1, 3, 5, 7] : [0, 2, 4, 6];
+    var lows = dir === 'up' ? [0, 2, 4, 6] : [1, 3, 5, 7];
+    var names = dir === 'up' ? ['-', 'HH', '-', 'HH', '-', 'HH', '-', 'HH'] : ['-', 'LH', '-', 'LH', '-', 'LH', '-', 'LH'];
+    var namesL = dir === 'up' ? ['HL', '-', 'HL', '-', 'HL', '-', 'HL', '-'] : ['LL', '-', 'LL', '-', 'LL', '-', 'LL', '-'];
+    pts.forEach(function (p, i) {
+      var isH = highs.indexOf(i) >= 0;
+      el('rect', { x: p[0] - 4, y: p[1] - 4, width: 8, height: 8, fill: isH ? C.accent : C.info }, svg);
+      var nm = isH ? names[i] : namesL[i];
+      if (nm) label(svg, p[0], isH ? p[1] - 10 : p[1] + 18, nm, { size: 10.5, mono: true, anchor: 'middle',
+        fill: isH ? C.accent : C.info, weight: 600 });
+    });
+    var fit = dir === 'up' ? { a: [30, 170], b: [322, 104], c: C.up } : { a: [30, 52], b: [322, 132], c: C.down };
+    el('line', { x1: fit.a[0], y1: fit.a[1], x2: fit.b[0], y2: fit.b[1], stroke: fit.c, 'stroke-width': 1.6,
+      'stroke-dasharray': '6 4' }, svg);
+    label(svg, 14, 218, dir === 'up' ? 'higher high + higher low = uptrend (line through confirmed lows)'
+      : 'lower high + lower low = downtrend (line through confirmed highs)', { size: 10.5, fill: C.mute });
+  }
+  trendSchematic('svgUp', 'up');
+  trendSchematic('svgDown', 'down');
+
+  /* ---------- 4. Schematic: nested three trends ---------- */
+  (function () {
+    var svg = document.getElementById('svgTrends'); if (!svg) return;
+    for (var g = 1; g < 6; g++) el('line', { x1: 20, x2: 448, y1: g * 46, y2: g * 46, stroke: C.grid }, svg);
+    var primary = [[20, 250], [110, 196], [150, 178], [250, 120], [300, 96], [380, 60], [448, 34]];
+    el('polyline', { points: primary.map(function (p) { return p.join(','); }).join(' '), fill: 'none',
+      stroke: C.up, 'stroke-width': 3 }, svg);
+    label(svg, 26, 268, 'PRIMARY (monthly, years) - bullish', { size: 11, fill: C.up, weight: 600 });
+    var secondary = [[250, 120], [282, 150], [300, 168], [330, 150]];
+    el('polyline', { points: secondary.map(function (p) { return p.join(','); }).join(' '), fill: 'none',
+      stroke: C.accent, 'stroke-width': 2.4, 'stroke-dasharray': '7 4' }, svg);
+    label(svg, 214, 186, 'SECONDARY 18-24 months, runs against it', { size: 10.5, fill: C.accent });
+    var minor = [[300, 168], [310, 152], [318, 162], [330, 150], [342, 138], [352, 146]];
+    el('polyline', { points: minor.map(function (p) { return p.join(','); }).join(' '), fill: 'none',
+      stroke: C.info, 'stroke-width': 1.7 }, svg);
+    label(svg, 336, 172, 'MINOR < 3 weeks', { size: 10, fill: C.info });
+    el('circle', { cx: 300, cy: 168, r: 5, fill: 'none', stroke: C.accent, 'stroke-width': 2 }, svg);
+    label(svg, 292, 214, 'the bottom you will be told is a bear market', { size: 10, fill: C.mute, anchor: 'middle' });
+    label(svg, 20, 292, 'Same instrument, three clocks. Only the primary is a belief; the minor is a trade.', { size: 10.5, fill: C.mute });
+  })();
+
+  /* ---------- 5. Schematic: true vs false breakout on volume ---------- */
+  function breakoutSchematic(id, real) {
+    var svg = document.getElementById(id); if (!svg) return;
+    var priceH = 130, volTop = 178, volH = 52;
+    el('line', { x1: 16, x2: 404, y1: 40, y2: 40, stroke: C.accent, 'stroke-width': 1.4, 'stroke-dasharray': '6 4' }, svg);
+    label(svg, 16, 34, 'prior swing high', { size: 9.5, fill: C.accent });
+    var shape = real ? [[16, 96], [56, 70], [96, 104], [140, 66], [182, 96], [226, 46], [268, 78], [312, 34], [356, 52], [404, 22]]
+                     : [[16, 96], [56, 70], [96, 104], [140, 66], [182, 96], [226, 44], [268, 82], [312, 56], [356, 96], [404, 112]];
+    el('polyline', { points: shape.map(function (p) { return p.join(','); }).join(' '), fill: 'none',
+      stroke: real ? C.up : C.down, 'stroke-width': 2.2 }, svg);
+    var vols = real ? [40, 52, 36, 58, 44, 74, 92, 100, 86, 104] : [86, 70, 92, 62, 78, 54, 40, 30, 26, 20];
+    var step = (R2() - 16) / vols.length;
+    vols.forEach(function (v, i) {
+      var bh = v / 110 * volH;
+      el('rect', { x: 16 + step * i + 2, y: volTop + volH - bh, width: step - 5, height: bh,
+        fill: i >= 5 ? (real ? C.up : C.down) : C.grid2, 'fill-opacity': i >= 5 ? .8 : 1 }, svg);
+    });
+    function R2() { return 404; }
+    el('line', { x1: 16, x2: 404, y1: volTop + volH, y2: volTop + volH, stroke: C.grid2 }, svg);
+    label(svg, 16, 168, 'price', { size: 9.5, fill: C.mute });
+    label(svg, 16, volTop - 6, 'volume - compare the last six bars with these three', { size: 9.5, fill: C.mute });
+    label(svg, 16, 244, real ? 'CLOSE holds above the level and volume steps up: confirmed, trade it'
+                             : 'Close falls back inside and volume shrinks: trap, no long - and a fade',
+      { size: 10.5, fill: real ? C.up : C.down, weight: 600 });
+  }
+  breakoutSchematic('svgTrue', true);
+  breakoutSchematic('svgFalse', false);
+
+  /* ================= live tape: real data, polled every 3 seconds =================
+     Same public quote endpoint and the same relay failover chain the desk uses, inlined here
+     so the deck stays one portable file. Yahoo sends no Access-Control-Allow-Origin, so a
+     browser has to reach it through a relay; r.jina.ai is the only keyless one that answers. */
+  var LIVE = (function () {
+    var YF = 'https://query1.finance.yahoo.com/v8/finance/chart/';
+    var CHAIN = [
+      { n: 'r.jina.ai', t: 'https://r.jina.ai/{url}' },
+      { n: 'allorigins', t: 'https://api.allorigins.win/raw?url={url}' },
+      { n: 'codetabs', t: 'https://api.codetabs.com/v1/proxy?quest={url}' }
+    ];
+    var SEC = { '1m': 60, '2m': 120, '5m': 300, '15m': 900, '30m': 1800, '60m': 3600, '1d': 86400, '1wk': 604800 };
+    var POLL_MS = 3000, SLOW_MS = 10000, FETCH_MS = 9000;
+    var VOL_LOOKBACK = 6, VOL_X = 1.3, PIV_W = 2, MAX_BARS = 110;
+
+    var ids = ['liveSym', 'liveIv', 'liveRange', 'liveGo', 'livePause', 'liveLast', 'liveChg', 'liveHi',
+      'liveVol', 'livePiv', 'liveState', 'liveCv', 'liveStat', 'liveMeta',
+      'tick', 'tickSym', 'tickPrice', 'tickLine', 'tickAge', 'btnTape'];
+    var D = {}; ids.forEach(function (k) { D[k] = document.getElementById(k); });
+    if (!D.liveCv || !D.tickPrice) return { present: false };
+
+    var st = { sym: D.liveSym.value || '^NSEI', iv: D.liveIv.value, range: D.liveRange.value,
+      bars: [], vr: [], piv: [], meta: {}, step: 300000, prevClose: null, mark: null,
+      polls: 0, ok: 0, changes: 0, fails: 0, lastOk: 0, err: '', relay: '',
+      inFlight: false, timer: null, slowTimer: null, paused: false, enabled: true,
+      gen: 0, shown: true, tz: '', currency: '', exchange: '' };
+
+    var COL = { up: '#26b376', down: '#e34f5c', accent: '#f2b53c', info: '#4ba3d8',
+      grid: '#1f2836', grid2: '#2a3546', mute: '#63748a', ink: '#dce6f1', bg: '#0a0d12' };
+
+    /* ---------------------------------------------------------------- data */
+    function proxied(url, tpl) { return tpl.replace('{url}', encodeURIComponent(url)); }
+
+    function extractJson(txt) {
+      if (!txt) throw new Error('empty response');
+      var t = txt.trim();
+      try { return JSON.parse(t); } catch (e) { /* wrapped by the relay */ }
+      var s = t.indexOf('{"chart"'); if (s < 0) s = t.indexOf('{');
+      if (s < 0) throw new Error('non-JSON relay response');
+      var depth = 0, end = -1, inStr = false, esc = false;
+      for (var i = s; i < t.length; i++) {
+        var c = t[i];
+        if (inStr) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === '"') inStr = false; continue; }
+        if (c === '"') inStr = true;
+        else if (c === '{') depth++;
+        else if (c === '}') { depth--; if (depth === 0) { end = i; break; } }
+      }
+      if (end < 0) throw new Error('truncated payload');
+      return JSON.parse(t.slice(s, end + 1));
+    }
+
+    function fetchText(url) {
+      var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+      var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, FETCH_MS);
+      return fetch(url, { signal: ctrl ? ctrl.signal : undefined, redirect: 'follow',
+        headers: { Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8' } })
+        .then(function (res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.text(); })
+        .then(function (txt) { clearTimeout(to); return txt; },
+              function (e) { clearTimeout(to); throw e; });
+    }
+
+    function parseSeries(payload) {
+      if (payload && payload.data && typeof payload.data.content === 'string') {
+        try { payload = JSON.parse(payload.data.content); } catch (e) { /* leave as-is */ }
+      }
+      var chart = payload && payload.chart ? payload.chart : payload;
+      if (chart && chart.error) throw new Error(String(chart.error.description || chart.error.code || 'feed error'));
+      var r = chart && chart.result && chart.result[0];
+      if (!r) throw new Error('unrecognised payload shape');
+      var meta = r.meta || {}, q = (r.indicators && r.indicators.quote && r.indicators.quote[0]) || {};
+      var ts = r.timestamp || [], bars = [], step = SEC[meta.dataGranularity] || SEC[st.iv] || 300;
+      for (var i = 0; i < ts.length; i++) {
+        var c = q.close ? q.close[i] : null;
+        if (!(c > 0)) continue;
+        var o = q.open && q.open[i] != null ? q.open[i] : c;
+        var h = q.high && q.high[i] != null ? q.high[i] : Math.max(o, c);
+        var l = q.low && q.low[i] != null ? q.low[i] : Math.min(o, c);
+        var v = q.volume && q.volume[i] != null ? q.volume[i] : 0;
+        bars.push({ t: ts[i] * 1000, o: o, c: c, h: Math.max(h, o, c), l: Math.min(l, o, c), v: v });
+      }
+      if (!bars.length) throw new Error('no bars returned for this window');
+      return { bars: bars, meta: meta, step: step * 1000 };
+    }
+
+    function requestSeries(gen) {
+      var url = YF + encodeURIComponent(st.sym) + '?range=' + encodeURIComponent(st.range) +
+        '&interval=' + encodeURIComponent(st.iv) + '&events=div%2Csplit';
+      var i = 0, errs = [];
+      function attempt() {
+        if (i >= CHAIN.length) return Promise.reject(new Error(errs.join(' | ') || 'every relay failed'));
+        var hop = CHAIN[i++];
+        return fetchText(proxied(url, hop.t))
+          .then(function (txt) {
+            var s = parseSeries(extractJson(txt));
+            if (gen !== st.gen) { var e = new Error('stale response'); e.stale = true; throw e; }
+            st.relay = hop.n;
+            return s;
+          })
+          .catch(function (e) {
+            if (e && e.stale) throw e;
+            var m = hop.n + ': ' + (e && e.message ? e.message : String(e));
+            errs.push(m); st.err = m;
+            return attempt();
+          });
+      }
+      return attempt();
+    }
+
+    /* ---------------------------------------------------------------- maths */
+    function med(arr) {
+      if (!arr.length) return 0;
+      var a = arr.slice().sort(function (x, y) { return x - y; }), m = a.length >> 1;
+      return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+    }
+    function volRatios(bars) {
+      return bars.map(function (b, i) {
+        var prior = [];
+        for (var j = Math.max(0, i - VOL_LOOKBACK); j < i; j++) if (bars[j].v > 0) prior.push(bars[j].v);
+        var m = med(prior);
+        return m > 0 ? b.v / m : 0;
+      });
+    }
+    /* Fractal pivots, same no-lookahead rule as the desk: a pivot is only usable PIV_W bars later. */
+    function findPivots(bars) {
+      var out = [];
+      for (var i = PIV_W; i < bars.length - PIV_W; i++) {
+        var isH = true, isL = true;
+        for (var j = i - PIV_W; j <= i + PIV_W; j++) {
+          if (j === i) continue;
+          if (bars[j].h >= bars[i].h) isH = false;
+          if (bars[j].l <= bars[i].l) isL = false;
+          if (!isH && !isL) break;
+        }
+        if (isH) out.push({ i: i, t: bars[i].t, side: 'H', price: bars[i].h });
+        else if (isL) out.push({ i: i, t: bars[i].t, side: 'L', price: bars[i].l });
+      }
+      var H = [], L = [];
+      out.forEach(function (p) {
+        var ref = p.side === 'H' ? H[H.length - 1] : L[L.length - 1];
+        var tol = p.price * 0.0004;
+        p.label = !ref ? (p.side === 'H' ? 'H' : 'L')
+          : Math.abs(p.price - ref.price) <= tol ? (p.side === 'H' ? 'EQH' : 'EQL')
+          : p.price > ref.price ? (p.side === 'H' ? 'HH' : 'HL')
+          : p.side === 'H' ? 'LH' : 'LL';
+        (p.side === 'H' ? H : L).push(p);
+      });
+      return { all: out, highs: H, lows: L };
+    }
+
+    function decFor(p) { return !(p > 0) ? 2 : p > 2000 ? 1 : p > 100 ? 2 : 3; }
+    function px(v, dec) { return v == null || !isFinite(v) ? '--' : Number(v).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+    function vol(n) { return n >= 1e7 ? (n / 1e7).toFixed(2) + ' Cr' : n >= 1e5 ? (n / 1e5).toFixed(2) + ' L' : Math.round(n).toLocaleString('en-US'); }
+    var dayFmt = null, timeFmt = null;
+    function setFormatters(tz) {
+      if (st.tz === tz) return;
+      st.tz = tz || 'UTC';
+      try {
+        dayFmt = new Intl.DateTimeFormat('en-GB', { timeZone: st.tz, day: '2-digit', month: 'short' });
+        timeFmt = new Intl.DateTimeFormat('en-GB', { timeZone: st.tz, hour: '2-digit', minute: '2-digit' });
+      } catch (e) { dayFmt = timeFmt = null; }
+    }
+    function dayKey(t) {
+      if (dayFmt) return dayFmt.format(new Date(t));
+      var d = new Date(t); return ('0' + d.getDate()).slice(-2) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()];
+    }
+    function clock(t) {
+      if (timeFmt && dayFmt) return dayFmt.format(new Date(t)) + ' ' + timeFmt.format(new Date(t));
+      return new Date(t).toLocaleString();
+    }
+    function hhmm(t) {
+      if (timeFmt) return timeFmt.format(new Date(t));
+      var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+
+    /* ---------------------------------------------------------------- canvas */
+    function fit(cv) {
+      var dpr = Math.max(1, window.devicePixelRatio || 1);
+      var w = cv.clientWidth || 880, h = cv.clientHeight || 320;
+      var W = Math.round(w * dpr), H = Math.round(h * dpr);
+      if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+      var ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { ctx: ctx, w: w, h: h };
+    }
+    function niceTicks(lo, hi, want) {
+      var raw = (hi - lo) / (want || 4); if (!(raw > 0)) return [lo];
+      var mag = Math.pow(10, Math.floor(Math.log(raw) / Math.LN10));
+      var stepv = mag * 10;
+      [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10].some(function (m) { if (m * mag >= raw) { stepv = m * mag; return true; } return false; });
+      var out = [];
+      for (var v = Math.ceil(lo / stepv) * stepv; v <= hi + 1e-9; v += stepv) out.push(v);
+      return out;
+    }
+
+    function paint() {
+      var g = fit(D.liveCv), ctx = g.ctx, w = g.w, h = g.h;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = COL.bg; ctx.fillRect(0, 0, w, h);
+      ctx.font = '10px Consolas,monospace'; ctx.textBaseline = 'middle';
+      if (!st.bars.length) {
+        ctx.fillStyle = COL.mute; ctx.textAlign = 'center';
+        ctx.fillText(st.err ? 'no tape yet - ' + st.err : 'waiting for the first pull...', w / 2, h / 2);
+        ctx.textAlign = 'left';
+        return;
+      }
+      var n = Math.min(MAX_BARS, st.bars.length), first = st.bars.length - n, view = st.bars.slice(first);
+      var axisH = 15, volH = Math.max(30, Math.round(h * 0.15)), gap = 7, padR = 56, padL = 8;
+      var priceTop = 11, priceBot = h - axisH - volH - gap, volTop = priceBot + gap, volBot = h - axisH;
+      var plotW = w - padR - padL, step = plotW / n, bodyW = Math.max(1.5, Math.min(step * 0.66, 13));
+      var x = function (i) { return padL + step * (i + 0.5); };
+
+      var lo = Infinity, hi = -Infinity, vMax = 0;
+      view.forEach(function (b) { if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; if (b.v > vMax) vMax = b.v; });
+      var padp = (hi - lo) * 0.07 || hi * 0.001; lo -= padp; hi += padp;
+      var dec = decFor(st.mark || view[view.length - 1].c);
+      var y = function (v) { return priceTop + (hi - v) / (hi - lo) * (priceBot - priceTop); };
+
+      niceTicks(lo, hi, h > 240 ? 5 : 3).forEach(function (v) {
+        var yy = y(v);
+        ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(padL, yy); ctx.lineTo(w - padR, yy); ctx.stroke();
+        ctx.fillStyle = COL.mute; ctx.textAlign = 'left';
+        ctx.fillText(px(v, dec), w - padR + 5, yy);
+      });
+
+      /* session extremes from the newest bar's own trading day (intraday tapes only) */
+      var intraday = st.step < 82800000;
+      var lastDay = view[view.length - 1].t, sHi = null, sLo = null;
+      if (intraday) {
+        st.bars.forEach(function (b) { if (dayKey(b.t) === dayKey(lastDay)) { if (sHi == null || b.h > sHi) sHi = b.h; if (sLo == null || b.l < sLo) sLo = b.l; } });
+        [[sHi, 'session high'], [sLo, 'session low']].forEach(function (p) {
+          if (p[0] == null) return;
+          ctx.strokeStyle = COL.grid2; ctx.setLineDash([2, 4]);
+          ctx.beginPath(); ctx.moveTo(padL, y(p[0])); ctx.lineTo(w - padR, y(p[0])); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = COL.mute; ctx.textAlign = 'left';
+          ctx.fillText(p[1], padL + 3, y(p[0]) - 6);
+        });
+      }
+      /* previous close: the line the whole session is measured against */
+      var pc = st.prevClose;
+      if (pc != null && pc > lo && pc < hi) {
+        ctx.strokeStyle = COL.info; ctx.setLineDash([6, 4]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(padL, y(pc)); ctx.lineTo(w - padR, y(pc)); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = COL.info; ctx.textAlign = 'left';
+        ctx.fillText('prev close ' + px(pc, dec), padL + 3, y(pc) + (y(pc) > priceTop + 10 ? -6 : 8));
+      }
+
+      /* volume: colour only carries the confirmation, nothing else */
+      var vBase = volBot;
+      ctx.strokeStyle = COL.grid2; ctx.beginPath(); ctx.moveTo(padL, vBase + 0.5); ctx.lineTo(w - padR, vBase + 0.5); ctx.stroke();
+      if (vMax > 0) {
+        view.forEach(function (b, i) {
+          if (!(b.v > 0)) {
+            if (i === n - 1) { ctx.fillStyle = COL.mute; ctx.fillRect(x(i) - bodyW / 2, vBase - 2, bodyW, 2); }
+            return;
+          }
+          var bh = b.v / vMax * (volH - 4);
+          var r = st.vr[first + i] || 0;
+          ctx.fillStyle = r >= VOL_X ? COL.accent : COL.grid2;
+          ctx.fillRect(x(i) - bodyW / 2, vBase - bh, bodyW, Math.max(1, bh));
+        });
+        ctx.fillStyle = COL.mute; ctx.textAlign = 'left';
+        ctx.fillText('volume (amber = 1.3x prior ' + VOL_LOOKBACK + '; the bar still forming has none)', padL + 3, volTop + 6);
+      } else {
+        ctx.fillStyle = COL.mute; ctx.textAlign = 'left';
+        ctx.fillText('no volume series on this tape - so nothing here can be volume-confirmed', padL + 3, volTop + 6);
+      }
+
+      /* candles */
+      view.forEach(function (b, i) {
+        var up = b.c >= b.o, col = up ? COL.up : COL.down, forming = i === n - 1;
+        ctx.strokeStyle = col; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(Math.round(x(i)) + 0.5, y(b.h)); ctx.lineTo(Math.round(x(i)) + 0.5, y(b.l)); ctx.stroke();
+        var top = y(Math.max(b.o, b.c)), bh = Math.max(1.2, Math.abs(y(b.o) - y(b.c)));
+        ctx.fillStyle = col;
+        if (forming) { ctx.globalAlpha = 1; } else { ctx.globalAlpha = 0.88; }
+        ctx.fillRect(x(i) - bodyW / 2, top, bodyW, bh);
+        ctx.globalAlpha = 1;
+        if (forming) { ctx.strokeStyle = COL.ink; ctx.lineWidth = 1; ctx.strokeRect(x(i) - bodyW / 2, top, bodyW, bh); }
+      });
+
+      /* pivots from the whole series, drawn only where they fall in the window */
+      var ph = 0;
+      st.piv.all.forEach(function (p) {
+        if (p.i < first) return;
+        var i = p.i - first, isH = p.side === 'H', yy = y(isH ? st.bars[p.i].h : st.bars[p.i].l);
+        ctx.fillStyle = isH ? COL.accent : COL.info;
+        ctx.beginPath();
+        ctx.moveTo(x(i), yy + (isH ? -4 : 4));
+        ctx.lineTo(x(i) - 3.4, yy + (isH ? -10 : 10));
+        ctx.lineTo(x(i) + 3.4, yy + (isH ? -10 : 10));
+        ctx.closePath(); ctx.fill();
+        if (p.label && p.label[0] !== 'E' && p.i >= first + n - 46) {
+          ctx.textAlign = 'center'; ctx.fillStyle = isH ? COL.accent : COL.info;
+          ctx.fillText(p.label, x(i), yy + (isH ? -17 : 17));
+        }
+        ph++;
+      });
+
+      /* last price + now marker */
+      var last = view[n - 1], ly = y(st.mark != null ? st.mark : last.c);
+      ctx.strokeStyle = COL.accent; ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x(n - 1), priceTop); ctx.lineTo(x(n - 1), volBot); ctx.stroke();
+      ctx.setLineDash([1, 3]);
+      ctx.beginPath(); ctx.moveTo(padL, ly); ctx.lineTo(w - padR, ly); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = last.c >= (pc != null ? pc : last.o) ? COL.up : COL.down;
+      ctx.fillRect(w - padR + 1, ly - 8, padR - 4, 16);
+      ctx.fillStyle = '#0a0d12'; ctx.textAlign = 'center';
+      ctx.fillText(px(st.mark != null ? st.mark : last.c, dec), w - padR + 1 + (padR - 4) / 2, ly);
+      ctx.textAlign = 'left';
+
+      /* time axis */
+      var every = Math.max(1, Math.round(n / (w > 700 ? 7 : 4)));
+      ctx.fillStyle = COL.mute; ctx.textAlign = 'center';
+      view.forEach(function (b, i) {
+        if (i % every !== 0) return;
+        ctx.fillText(intraday ? hhmm(b.t) : dayKey(b.t), x(i), h - axisH / 2 + 1);
+      });
+      ctx.textAlign = 'left';
+      ctx.fillStyle = COL.mute;
+      ctx.fillText(st.sym + '  ' + st.iv + '  ' + n + ' of ' + st.bars.length + ' bars' + (ph ? '  pivots ' + ph : ''), padL + 3, priceTop - 3);
+    }
+
+    /* ---------------------------------------------------------------- readouts */
+    function flash(dir) {
+      [D.liveLast, D.tickPrice].forEach(function (el) {
+        if (!el) return;
+        el.classList.remove('up', 'down'); void el.offsetWidth; el.classList.add(dir);
+      });
+      clearTimeout(flash.t);
+      flash.t = setTimeout(function () { [D.liveLast, D.tickPrice].forEach(function (el) { if (el) el.classList.remove('up', 'down'); }); }, 1200);
+    }
+
+    function sparkline() {
+      if (!D.tickLine) return;
+      var closes = st.bars.slice(-48).map(function (b) { return b.c; });
+      if (closes.length < 2) { D.tickLine.setAttribute('points', ''); return; }
+      var lo = Math.min.apply(null, closes), hi = Math.max.apply(null, closes), span = (hi - lo) || 1;
+      var pts = closes.map(function (c, i) {
+        return (2 + i * (88 / (closes.length - 1))).toFixed(1) + ',' + (20 - (c - lo) / span * 18).toFixed(1);
+      }).join(' ');
+      D.tickLine.setAttribute('points', pts);
+      D.tickLine.style.stroke = closes[closes.length - 1] >= closes[0] ? COL.up : COL.down;
+    }
+
+    function ageText() {
+      if (!st.lastOk) return st.inFlight ? 'pulling...' : 'idle';
+      var s = Math.max(0, Math.round((Date.now() - st.lastOk) / 1000));
+      return s < 2 ? 'just now' : s + 's ago';
+    }
+
+    function render() {
+      var bars = st.bars;
+      D.tickSym.textContent = st.sym;
+      if (st.mark != null) D.tickPrice.textContent = px(st.mark, decFor(st.mark));
+      paint(); sparkline();
+      if (!bars.length) { tickAge(); statusLine(); return; }
+      var dec = decFor(st.mark), last = bars[bars.length - 1];
+      D.liveLast.textContent = px(st.mark, dec);
+      var pc = st.prevClose, chg = pc != null ? st.mark - pc : null;
+      D.liveChg.textContent = chg == null ? '--' :
+        (chg >= 0 ? '+' : '') + px(chg, dec) + ' (' + (chg >= 0 ? '+' : '') + (chg / pc * 100).toFixed(2) + '%)';
+      D.liveChg.style.color = chg >= 0 ? COL.up : COL.down;
+      if (st.sessionHi != null) {
+        D.liveHi.textContent = px(st.sessionHi, dec) + ' / ' + px(st.sessionLo, dec);
+      } else {
+        D.liveHi.textContent = px(last.h, dec) + ' / ' + px(last.l, dec) + '  ' + dayKey(last.t);
+      }
+      var vi = st.volIdx, vb = vi >= 0 ? bars[vi] : null;
+      var r = vi >= 0 ? (st.vr[vi] || 0) : 0;
+      if (!vb) {
+        D.liveVol.textContent = 'none - this tape publishes no volume';
+        D.liveVol.style.color = COL.mute;
+      } else {
+        D.liveVol.textContent = (r ? r.toFixed(2) : '--') + 'x  ' + vol(vb.v) +
+          (r >= VOL_X ? ' - confirmed' : ' - thin') + (vi === bars.length - 1 ? '' : '  (bar forming)');
+        D.liveVol.style.color = r >= VOL_X ? COL.accent : '';
+      }
+      var H = st.piv.highs.slice(-2), L = st.piv.lows.slice(-2);
+      var lastH = H.length > 1 ? H[1] : H[0], lastL = L.length > 1 ? L[1] : L[0];
+      D.livePiv.textContent = (lastH ? lastH.label + ' ' + px(lastH.price, dec) : 'no swing high') + '  ' +
+        (lastL ? lastL.label + ' ' + px(lastL.price, dec) : 'no swing low');
+      var verdict = 'not enough swings yet - observer';
+      if (H.length >= 2 && L.length >= 2) {
+        var hh = H[1].price > H[0].price, hl = L[1].price > L[0].price;
+        verdict = hh && hl ? 'HH + HL on this clock - uptrend' : !hh && !hl ? 'LH + LL - downtrend, stay away' : 'mixed labels - stay an observer';
+      }
+      var fresh = Date.now() - last.t < 4 * st.step + 60000;
+      D.liveState.textContent = verdict + (fresh ? '' : '  (tape closed)');
+      D.liveState.style.color = H.length >= 2 && L.length >= 2 ? ((H[1].price > H[0].price && L[1].price > L[0].price) ? COL.up : (H[1].price < H[0].price && L[1].price < L[0].price) ? COL.down : COL.accent) : '';
+      statusLine(); tickAge();
+    }
+
+    function statusLine() {
+      var e = st.err.length > 150 ? st.err.slice(0, 147) + '...' : st.err;
+      D.liveStat.innerHTML = st.err
+        ? '<span class="warn">last pull failed - ' + esc(e) + '</span>'
+        : '<span class="ok">tape live</span>';
+      D.liveStat.innerHTML += ' &nbsp;polls ' + st.polls + ' &middot; successful ' + st.ok +
+        ' &middot; price changes ' + st.changes + ' &middot; updated ' + esc(ageText()) +
+        ' &middot; relay ' + esc(st.relay || '-') +
+        (st.paused ? ' &middot; <span class="warn">paused by you</span>' : '') +
+        (!st.enabled ? ' &middot; <span class="bad">tape off</span>' : '');
+      D.liveMeta.textContent = st.sym + (st.exchange ? ' · ' + st.exchange : '') +
+        (st.currency ? ' · ' + st.currency : '') + (st.tz ? ' · ' + st.tz : '') +
+        ' · ' + st.iv + ' · window ' + st.range + ' · ' + st.bars.length + ' bars' +
+        (st.noVol ? ' · no volume series' : ' · amber volume bar = 1.3x the prior ' + VOL_LOOKBACK);
+    }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+    function tickAge() { D.tickAge.textContent = st.bars.length ? ageText() : '--'; }
+
+    /* ---------------------------------------------------------------- poll loop */
+    function period() { return (document.hidden || st.fails >= 2) ? SLOW_MS : POLL_MS; }
+    function restart() {
+      clearInterval(st.timer);
+      if (!st.enabled || st.paused) return;
+      st.timer = setInterval(pump, period());
+    }
+    function pump() {
+      if (st.inFlight || st.paused || !st.enabled) return;
+      st.inFlight = true; st.polls++;
+      var gen = st.gen;
+      requestSeries(gen).then(function (s) {
+        st.ok++; st.fails = 0; st.err = ''; st.lastOk = Date.now();
+        st.bars = s.bars; st.step = s.step; st.meta = s.meta;
+        st.vr = volRatios(s.bars);
+        st.piv = findPivots(s.bars);
+        st.exchange = s.meta.fullExchangeName || s.meta.exchangeName || '';
+        st.currency = s.meta.currency || '';
+        setFormatters(s.meta.exchangeTimezoneName || 'UTC');
+        st.prevClose = null;
+        var last = s.bars[s.bars.length - 1], dk = dayKey(last.t);
+        var intraday = s.step < 82800000, hi = null, lo2 = null, pc = null;
+        for (var i = s.bars.length - 1; i >= 0; i--) {
+          var b = s.bars[i];
+          if (dayKey(b.t) === dk) { if (hi == null || b.h > hi) hi = b.h; if (lo2 == null || b.l < lo2) lo2 = b.l; }
+          else { pc = b.c; break; }
+        }
+        st.intraday = intraday;
+        st.sessionHi = intraday ? hi : null; st.sessionLo = intraday ? lo2 : null;
+        /* "vs prev close" has to mean yesterday's close, not the close at the start of a 5-day
+           window - chartPreviousClose is the latter, so use the bars and only fall back to meta. */
+        st.prevClose = pc != null ? pc
+          : s.meta.chartPreviousClose != null ? s.meta.chartPreviousClose
+          : s.meta.previousClose != null ? s.meta.previousClose
+          : s.bars.length > 1 ? s.bars[s.bars.length - 2].c : null;
+        st.noVol = s.bars.every(function (b2) { return !(b2.v > 0); });
+        /* The forming bar's volume is not published yet, so the volume rule can only ever be
+           applied to the last closed bar - which is also the lesson. */
+        st.volIdx = -1;
+        for (var k = s.bars.length - 1; k >= 0; k--) { if (s.bars[k].v > 0) { st.volIdx = k; break; } }
+        var mk = isFinite(s.meta.regularMarketPrice) ? s.meta.regularMarketPrice : last.c;
+        if (st.mark != null && Math.abs(mk - st.mark) > 1e-9) { st.changes++; flash(mk > st.mark ? 'up' : 'down'); }
+        st.mark = mk;
+        if (!st.shown) { D.tickPrice.textContent = px(mk, decFor(mk)); tickAge(); }
+        render();
+      }).catch(function (e) {
+        if (gen !== st.gen) return;
+        st.fails++;
+        st.err = (e && e.message) || String(e);
+        render();
+      }).then(function () { st.inFlight = false; restart(); });
+    }
+
+    function load(rawSym, iv, range) {
+      var sym = String(rawSym || '').trim().toUpperCase().replace(/\s+/g, '');
+      if (!sym) return;
+      st.gen++;
+      st.sym = sym; st.iv = iv || st.iv; st.range = range || st.range;
+      D.liveSym.value = sym; D.liveIv.value = st.iv; D.liveRange.value = st.range;
+      st.bars = []; st.vr = []; st.piv = []; st.mark = null; st.prevClose = null;
+      st.sessionHi = null; st.sessionLo = null;
+      st.changes = 0; st.err = ''; st.relay = '';
+      Array.prototype.forEach.call(document.querySelectorAll('.live .chip'), function (c) {
+        c.classList.toggle('is-on', c.dataset.sym === sym && c.dataset.iv === st.iv);
+      });
+      D.tickPrice.textContent = '--';
+      render();
+      pump();
+    }
+
+    /* ---------------------------------------------------------------- wiring */
+    D.liveGo.addEventListener('click', function () { load(D.liveSym.value, D.liveIv.value, D.liveRange.value); });
+    D.liveSym.addEventListener('keydown', function (e) { if (e.key === 'Enter') load(D.liveSym.value, D.liveIv.value, D.liveRange.value); });
+    D.liveIv.addEventListener('change', function () { load(D.liveSym.value, D.liveIv.value, D.liveRange.value); });
+    D.liveRange.addEventListener('change', function () { load(D.liveSym.value, D.liveIv.value, D.liveRange.value); });
+    Array.prototype.forEach.call(document.querySelectorAll('.live .chip'), function (c) {
+      c.addEventListener('click', function () { load(c.dataset.sym, c.dataset.iv, c.dataset.range); });
+    });
+    D.livePause.addEventListener('click', function () {
+      st.paused = !st.paused;
+      D.livePause.textContent = st.paused ? 'resume tape' : 'pause tape';
+      restart(); statusLine();
+    });
+    D.btnTape.addEventListener('click', function () {
+      st.enabled = !st.enabled;
+      D.btnTape.textContent = 'tape: ' + (st.enabled ? 'on' : 'off');
+      D.btnTape.classList.toggle('is-off', !st.enabled);
+      D.tick.style.opacity = st.enabled ? '1' : '.45';
+      restart(); if (st.enabled) pump(); else statusLine();
+    });
+
+    slideListeners.push(function (slide) {
+      var on = slide && slide.id === 's-live';
+      if (on === st.shown) return;
+      st.shown = on;
+      if (on) { render(); if (st.enabled && !st.inFlight && !st.bars.length) pump(); }
+    });
+    window.addEventListener('resize', function () { if (st.bars.length) paint(); });
+    document.addEventListener('visibilitychange', function () { restart(); if (!document.hidden) pump(); });
+    setInterval(tickAge, 500);
+
+    st.shown = false;
+    load(D.liveSym.value, D.liveIv.value, D.liveRange.value);
+    return { present: true, state: st, load: load, pump: pump, restart: restart, period: period,
+      pollCount: function () { return st.polls; } };
+  })();
+  /* ================= boot ================= */
+  var fromHash = parseInt((location.hash || '').replace('#', ''), 10);
+  show(isFinite(fromHash) && fromHash >= 1 ? fromHash - 1 : 0, false);
+
+  var brk = slides[slides.length - 1];
+  if (brk) {
+    var t = document.getElementById('backTime');
+    if (t) {
+      var d = new Date(Date.now() + 10 * 60000);
+      t.textContent = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+  }
+})();
+</script>
+</body>
+</html>

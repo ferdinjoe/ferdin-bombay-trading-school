@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>390px probe</title>
+<style>body{margin:0;background:#222;display:flex;gap:16px;padding:16px;font:12px monospace;color:#ddd}
+iframe{width:390px;height:760px;flex:none;border:1px solid #555;background:#0a0d12}</style>
+</head>
+<body>
+<iframe id="f" src="http://127.0.0.1:8948/market-structure-desk/index.html"></iframe>
+<pre id="out">measuring…</pre>
+<script>
+const f = document.getElementById('f'), out = document.getElementById('out');
+f.addEventListener('load', () => setTimeout(() => {
+  const d = f.contentDocument, w = f.contentWindow;
+  const doc = d.documentElement, body = d.body;
+  const g = s => d.querySelector(s);
+  const bar = g('#timelineBar'), strip = g('#marketChips');
+  const r = e => e ? { w: Math.round(e.getBoundingClientRect().width), h: Math.round(e.getBoundingClientRect().height) } : null;
+  out.textContent = JSON.stringify({
+    innerWidth: w.innerWidth,
+    scrollWidth: doc.scrollWidth,
+    clientWidth: doc.clientWidth,
+    overflow: doc.scrollWidth > doc.clientWidth + 1,
+    bodyRowWidths: [...body.children].filter(e => e.offsetParent !== null || getComputedStyle(e).display === 'contents')
+      .map(e => e.id + ':' + Math.round(e.getBoundingClientRect().width)).filter(s => !s.endsWith(':0')),
+    timelineBar: r(bar),
+    marketChipsBox: r(strip),
+    chips: [...d.querySelectorAll('#marketChips .ms-chip')].filter(c => c.offsetParent !== null).map(c => c.textContent + ':' + Math.round(c.getBoundingClientRect().width)),
+    chipRows: (() => { const v = [...d.querySelectorAll('#marketChips .ms-chip')].filter(c => c.offsetParent !== null); return new Set(v.map(c => Math.round(c.getBoundingClientRect().top))).size; })(),
+    labelShown: (() => { const l = g('.tl-market .tl-label'); return l ? l.offsetParent !== null : null; })(),
+    chartTop: Math.round((g('#chart') ? g('#chart').getBoundingClientRect().top : -1)),
+    view: body.dataset.view
+  }, null, 1);
+}, 3500));
+</script>
+</body>
+</html>

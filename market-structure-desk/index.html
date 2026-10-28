@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Structure Desk — Market Structure &amp; Volume Confirmation</title>
+<meta name="description" content="Cross-market structure reader: swing high/low labelling (HH/HL vs LH/LL), close-weighted confirmation, volume-validated breakouts.">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">SD</span>
+    <div class="brand-txt">
+      <strong>Structure Desk</strong>
+      <em>swing structure · close-weighted · volume-confirmed</em>
+    </div>
+  </div>
+
+  <form id="symbolForm" class="symbol-search" autocomplete="off">
+    <input id="symbolInput" type="text" spellcheck="false" placeholder="Ticker: AAPL, RELIANCE, NIFTY, BANKNIFTY, SENSEX, BSE:CROPSTER, ^NSEI …" aria-label="Ticker or index name">
+    <button id="loadBtn" type="submit">Load</button>
+    <div id="symbolHint" class="symbol-hint" hidden></div>
+  </form>
+
+  <div class="quote-strip" id="quoteStrip">
+    <div class="qs-cell"><span class="qs-k">Instrument</span><span class="qs-v" id="qsName">—</span></div>
+    <div class="qs-cell qs-last"><span class="qs-k">Last <span class="qs-dot" id="qsDot" title="Price tick is live"></span></span><span class="qs-v" id="qsLast">—</span></div>
+    <div class="qs-cell"><span class="qs-k">Chg</span><span class="qs-v" id="qsChg">—</span></div>
+    <div class="qs-cell"><span class="qs-k">Session</span><span class="qs-v" id="qsSession">—</span></div>
+    <div class="qs-cell"><span class="qs-k">RVOL</span><span class="qs-v" id="qsRvol">—</span></div>
+  </div>
+
+  <div class="view-tabs" id="viewTabs" role="tablist" aria-label="View">
+    <button class="vt-btn is-on" data-view="desk" role="tab" aria-selected="true">Desk</button>
+    <button class="vt-btn" data-view="watch" role="tab" aria-selected="false">Watchlist<span class="vt-count" id="watchTabCount">0</span></button>
+    <button class="vt-btn" data-view="scan" role="tab" aria-selected="false">Scan<span class="vt-count" id="scanTabCount">0</span></button>
+    <button class="vt-btn" data-view="books" role="tab" aria-selected="false">Books<span class="vt-count" id="booksTabCount">0</span></button>
+  </div>
+
+  <div class="topbar-right">
+    <span id="liveBadge" class="badge badge-live" title="Live polling is active">LIVE</span>
+    <button id="settingsBtn" class="ghost-btn" type="button">Settings</button>
+  </div>
+</header>
+
+<div id="deskView">
+<nav class="timeline-bar" id="timelineBar">
+  <div class="tl-group tl-market">
+    <span class="tl-label">Market</span>
+    <div class="tl-chips" id="marketChips" role="group" aria-label="Market indices — click to load the index chart"></div>
+  </div>
+  <div class="tl-group">
+    <span class="tl-label">Intraday</span>
+    <div class="tl-chips" data-group="intraday">
+      <button class="chip" data-tl="intraday" data-interval="1m" data-range="1d">1m</button>
+      <button class="chip" data-tl="intraday" data-interval="5m" data-range="1d">5m</button>
+      <button class="chip" data-tl="intraday" data-interval="15m" data-range="5d">15m</button>
+      <button class="chip" data-tl="intraday" data-interval="30m" data-range="5d">30m</button>
+      <button class="chip" data-tl="intraday" data-interval="60m" data-range="1mo">1h</button>
+      <button class="chip" data-tl="intraday" data-interval="90m" data-range="3mo">90m</button>
+    </div>
+  </div>
+  <div class="tl-group">
+    <span class="tl-label">Swing</span>
+    <div class="tl-chips" data-group="swing">
+      <button class="chip" data-tl="swing" data-interval="1h" data-range="3mo">1h · 3M</button>
+      <button class="chip" data-tl="swing" data-interval="60m" data-range="60d">60m · 60D</button>
+      <button class="chip" data-tl="swing" data-interval="1d" data-range="1mo">1D · 1M</button>
+      <button class="chip" data-tl="swing" data-interval="1d" data-range="6mo">1D · 6M</button>
+    </div>
+  </div>
+  <div class="tl-group">
+    <span class="tl-label">Position</span>
+    <div class="tl-chips" data-group="long">
+      <button class="chip" data-tl="long" data-interval="1d" data-range="1y">1Y</button>
+      <button class="chip" data-tl="long" data-interval="1wk" data-range="5y">5W</button>
+      <button class="chip" data-tl="long" data-interval="1mo" data-range="10y">10M</button>
+      <button class="chip" data-tl="long" data-interval="1mo" data-range="max">Max</button>
+    </div>
+  </div>
+  <div class="tl-group tl-custom">
+    <span class="tl-label">Custom window</span>
+    <div class="tl-custom-row">
+      <input id="customFrom" type="date" aria-label="From date">
+      <span class="tl-dash">→</span>
+      <input id="customTo" type="date" aria-label="To date">
+      <select id="customInterval" aria-label="Custom bar interval">
+        <option value="5m">5 min</option>
+        <option value="15m">15 min</option>
+        <option value="60m">60 min</option>
+        <option value="1d" selected>1 day</option>
+        <option value="1wk">1 week</option>
+        <option value="1mo">1 month</option>
+      </select>
+      <button id="customGo" class="chip chip-go" type="button">Apply</button>
+      <button id="liveGo" class="chip chip-live" type="button">Back to live</button>
+    </div>
+  </div>
+</nav>
+
+<main class="workspace">
+  <section class="chart-col">
+    <div class="chart-toolbar">
+      <label class="watch-fld tb-fld"><span>Type</span>
+        <select id="chartType" aria-label="Chart type">
+          <option value="candles" selected>Candles</option>
+          <option value="hollow">Hollow candles</option>
+          <option value="bars">OHLC bars</option>
+          <option value="heikin">Heikin Ashi</option>
+          <option value="area">Area</option>
+          <option value="line">Line</option>
+          <option value="both">Candles + line</option>
+        </select></label>
+      <div class="toggles">
+        <label class="tgl"><input type="checkbox" id="tglVolume" checked><span>Volume</span></label>
+        <label class="tgl"><input type="checkbox" id="tglStructure" checked><span>Structure labels</span></label>
+        <label class="tgl"><input type="checkbox" id="tglLevels" checked><span>Swing levels</span></label>
+        <label class="tgl"><input type="checkbox" id="tglTrend" checked><span>Trendlines</span></label>
+        <label class="tgl"><input type="checkbox" id="tglFib"><span>Fib retracement</span></label>
+        <label class="tgl"><input type="checkbox" id="tglLog"><span>Log scale</span></label>
+        <label class="tgl"><input type="checkbox" id="tglCloseWeight" checked><span>Close-weighted pivots</span></label>
+      </div>
+      <div class="chart-meta">
+        <span id="barCount">0 bars</span>
+        <span id="spanLabel">—</span>
+      </div>
+      <div class="chart-actions">
+        <button id="pngExport" class="ghost-btn sm" type="button" title="Download this chart as a PNG">Snapshot PNG</button>
+        <button id="replayToggle" class="ghost-btn sm" type="button" title="Step through history bar by bar">Replay</button>
+        <span id="replayNav" class="replay-nav" hidden>
+          <button id="replayPrev" class="ghost-btn sm" type="button" aria-label="Previous bar">◀</button>
+          <span id="replayPos" class="mono">—</span>
+          <button id="replayNext" class="ghost-btn sm" type="button" aria-label="Next bar">▶</button>
+          <button id="replayExit" class="ghost-btn sm" type="button">Exit replay</button>
+        </span>
+      </div>
+      <div class="study-bar" id="studyBar"></div>
+    </div>
+
+    <div class="chart-wrap" id="chartWrap">
+      <canvas id="chart" aria-label="Price chart"></canvas>
+      <div id="chartOverlay" class="chart-overlay" hidden></div>
+      <div id="tooltip" class="tooltip" hidden></div>
+      <div id="chartLegend" class="chart-legend" hidden></div>
+      <div id="loadingVeil" class="loading-veil" hidden>
+        <div class="spinner"></div>
+        <div id="loadingTxt">Requesting quotes…</div>
+      </div>
+    </div>
+
+    <div class="axis-note" id="axisNote"></div>
+
+    <div class="tables">
+      <div class="table-card">
+        <div class="table-head">
+          <h3>Structure ladder <span class="muted">(last confirmed swings first)</span></h3>
+          <button class="ghost-btn sm" data-copy="swings" type="button">Copy</button>
+        </div>
+        <div class="table-scroll"><table id="swingTable"><thead></thead><tbody></tbody></table></div>
+      </div>
+      <div class="table-card">
+        <div class="table-head">
+          <h3>Event log <span class="muted">(breakouts / breakdowns / failures)</span></h3>
+          <div class="btn-row">
+            <button class="ghost-btn sm" data-export="events-csv" type="button">CSV</button>
+            <button class="ghost-btn sm" data-export="snapshot-json" type="button">JSON</button>
+          </div>
+        </div>
+        <div class="table-scroll"><table id="eventTable"><thead></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="rail">
+    <div class="verdict-card" id="verdictCard">
+      <div class="vc-top">
+        <span class="vc-kicker">Structure verdict</span>
+        <span class="vc-score" id="vcScore">—</span>
+      </div>
+      <h2 class="vc-title" id="vcTitle">Awaiting data</h2>
+      <p class="vc-sub" id="vcSub">Load a ticker to read swing structure.</p>
+      <div class="vc-grid">
+        <div><span>Resistance</span><strong id="vcHighs">—</strong></div>
+        <div><span>Support</span><strong id="vcLows">—</strong></div>
+        <div><span>Bars in leg</span><strong id="vcRun">—</strong></div>
+        <div><span>Close bias</span><strong id="vcBias">—</strong></div>
+      </div>
+      <div class="vc-plan" id="vcPlan" hidden></div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Signals <span class="tag tag-ok" id="signalCount">0</span></h3>
+      <div id="signalList" class="stack-list"><p class="muted">No confirmed signals.</p></div>
+    </div>
+
+    <div class="card" id="alertsCard">
+      <h3 class="card-title">Alerts <span class="tag tag-flat" id="alertCount">0</span>
+        <button class="ghost-btn sm" id="alertClear" type="button" title="Remove alerts that already fired">Clear fired</button>
+      </h3>
+      <div class="alert-add">
+        <select id="alertOp" aria-label="Alert type">
+          <option value="above">Cross above</option>
+          <option value="below">Cross below</option>
+          <option value="breakout">Confirmed breakout</option>
+          <option value="breakdown">Confirmed breakdown</option>
+        </select>
+        <input id="alertPrice" type="number" step="any" inputmode="decimal" placeholder="price" aria-label="Alert price">
+        <button id="alertAdd" class="ghost-btn sm" type="button">Arm</button>
+      </div>
+      <div id="alertList" class="stack-list alert-list"><p class="muted">No alerts armed.</p></div>
+      <label class="tgl alert-notify"><input type="checkbox" id="alertNotify"><span>Also raise a desktop notification</span></label>
+      <p class="card-foot">Alerts fire only while this tab is open and polling — the free relays have no server to watch a level for you. Structure alerts wait for the engine's volume-confirmed break, not the first touch of a price.</p>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Unconfirmed / not tradeable <span class="tag tag-warn" id="watchCount">0</span></h3>
+      <div id="watchList" class="stack-list"><p class="muted">Nothing pending.</p></div>
+      <p class="card-foot">A level break without volume or close acceptance is an observation, not a signal.</p>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Levels &amp; readouts</h3>
+      <table class="kv" id="levelTable"><tbody></tbody></table>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">Data quality</h3>
+      <ul class="notes" id="qualityNotes"><li class="muted">—</li></ul>
+    </div>
+
+    <details class="card card-disclose" id="manualCard">
+      <summary>Manual override — paste / load OHLCV</summary>
+      <p class="muted small">Use when the public feed is rate-limited or the venue isn't covered. Header order: <code>date,open,high,low,close,volume</code></p>
+      <textarea id="csvBox" rows="6" spellcheck="false" placeholder="2026-10-23,245.10,248.90,244.20,247.55,51234000"></textarea>
+      <div class="btn-row">
+        <button id="csvApply" class="ghost-btn" type="button">Use pasted data</button>
+        <input id="csvFile" type="file" accept=".csv,.txt" hidden>
+        <button id="csvFileBtn" class="ghost-btn" type="button">Load CSV file</button>
+        <button id="csvSample" class="ghost-btn" type="button">Demo series</button>
+      </div>
+    </details>
+  </aside>
+</main>
+</div>
+
+<main class="watch-view" id="watchView" hidden>
+  <div class="watch-bar">
+    <div class="watch-markets" id="watchMarkets" role="tablist" aria-label="Watch lists"></div>
+    <div class="watch-ctl">
+    <form id="watchForm" class="watch-add" autocomplete="off">
+      <input id="watchInput" type="text" spellcheck="false" placeholder="Add to this list — AAPL, RELIANCE, NIFTY, BANKNIFTY, D05.SI (comma or space separated)" aria-label="Tickers or index names to add">
+      <button id="watchAdd" type="submit">Add</button>
+    </form>
+    <label class="watch-fld"><span>Bars</span>
+      <select id="watchInterval" aria-label="Bar interval">
+        <option value="1m">1 min</option>
+        <option value="5m">5 min</option>
+        <option value="15m">15 min</option>
+        <option value="60m">60 min</option>
+        <option value="1d" selected>1 day</option>
+        <option value="1wk">1 week</option>
+        <option value="1mo">1 month</option>
+      </select></label>
+    <label class="watch-fld"><span>Window</span>
+      <select id="watchRange" aria-label="Bar window">
+        <option value="1d">1 day</option>
+        <option value="5d">5 days</option>
+        <option value="1mo">1 month</option>
+        <option value="3mo">3 months</option>
+        <option value="6mo" selected>6 months</option>
+        <option value="1y">1 year</option>
+        <option value="5y">5 years</option>
+      </select></label>
+    <button id="watchRefresh" class="ghost-btn" type="button">Refresh all</button>
+    <label class="tgl"><input type="checkbox" id="watchAuto" checked><span>Auto-refresh</span></label>
+    <button id="watchClear" class="ghost-btn" type="button">Clear list</button>
+    <span class="watch-status" id="watchStatus">Idle.</span>
+    </div>
+  </div>
+
+  <div class="watch-stack" id="watchStack"></div>
+  <p class="watch-empty" id="watchEmpty">This list is empty. Add tickers above — every row runs the
+    same close-weighted structure engine as the Desk tab, stacked so a whole market can be read at
+    once. Each list (US, India, Singapore) keeps its own names, and only the open one is polled.</p>
+</main>
+
+<main class="scan-view" id="scanView" hidden>
+  <div class="scan-bar">
+    <div class="scan-ctl">
+      <label class="watch-fld"><span>Bars</span>
+        <select id="scanInterval" aria-label="Scan bar interval">
+          <option value="1m">1 min</option>
+          <option value="5m">5 min</option>
+          <option value="15m">15 min</option>
+          <option value="60m">60 min</option>
+          <option value="1d" selected>1 day</option>
+          <option value="1wk">1 week</option>
+          <option value="1mo">1 month</option>
+        </select></label>
+      <label class="watch-fld"><span>Window</span>
+        <select id="scanRange" aria-label="Scan bar window">
+          <option value="1d">1 day</option>
+          <option value="5d">5 days</option>
+          <option value="1mo">1 month</option>
+          <option value="3mo">3 months</option>
+          <option value="6mo" selected>6 months</option>
+          <option value="1y">1 year</option>
+          <option value="5y">5 years</option>
+        </select></label>
+      <label class="watch-fld"><span>Project</span>
+        <select id="scanHorizon" aria-label="Projection horizon in bars">
+          <option value="3">3 bars</option>
+          <option value="5" selected>5 bars</option>
+          <option value="10">10 bars</option>
+          <option value="20">20 bars</option>
+        </select></label>
+      <button id="scanRun" class="ghost-btn" type="button">Scan every list</button>
+      <span class="scan-status" id="scanStatus">Idle — nothing has been read yet.</span>
+    </div>
+    <div class="scan-ctl">
+      <label class="watch-fld"><span>List</span>
+        <select id="scanMarket" aria-label="Filter by watch list">
+          <option value="ALL">All three lists</option>
+          <option value="US">United States</option>
+          <option value="IN">India</option>
+          <option value="SG">Singapore</option>
+        </select></label>
+      <label class="watch-fld"><span>Action</span>
+        <select id="scanAction" aria-label="Filter by action">
+          <option value="ALL">Any action</option>
+          <option value="BUY">Buy only</option>
+          <option value="HOLD">Hold only</option>
+          <option value="SELL">Sell only</option>
+          <option value="NO READ">No read only</option>
+        </select></label>
+      <label class="watch-fld"><span>Technical</span>
+        <select id="scanTech" aria-label="Filter by technical condition">
+          <option value="ALL">Any condition</option>
+          <option value="rsi-os">RSI ≤ 30 (oversold)</option>
+          <option value="rsi-ob">RSI ≥ 70 (overbought)</option>
+          <option value="macd-bull">MACD above signal</option>
+          <option value="macd-bear">MACD below signal</option>
+        </select></label>
+      <span class="scan-tally" id="scanTally">—</span>
+      <span class="grow"></span>
+      <span class="muted sc-mhint">Tap a row for its ledger</span>
+      <span class="muted scan-hint" id="scanHint">Score = structure 3 · trendline 2.5 · volume-confirmed break 2 · reward-risk 1.5 · flow 1. RSI and MACD are context and filters, never part of the score. A starred Hold means the evidence is missing, not that the tape is neutral — click any row for the full ledger.</span>
+    </div>
+  </div>
+
+  <div class="scan-scroll">
+    <table class="scan-table">
+      <caption class="sc-cap">Every name on the US, India and Singapore lists, ranked by the same engine the Desk uses. <span class="muted" id="scanCount"></span></caption>
+      <thead><tr id="scanHead">
+        <th data-sk="sym" scope="col">Symbol</th>
+        <th data-sk="last" scope="col" class="num">Last</th>
+        <th data-sk="chg" scope="col" class="num">Chg</th>
+        <th data-sk="rvol" scope="col" class="num">RVOL</th>
+        <th data-sk="trend" scope="col">Trend</th>
+        <th data-sk="proj" scope="col" class="num">Projection</th>
+        <th data-sk="score" scope="col">Score /10</th>
+        <th data-sk="action" scope="col">Action</th>
+        <th data-sk="why" scope="col">Why</th>
+      </tr></thead>
+      <tbody id="scanBody"></tbody>
+    </table>
+  </div>
+</main>
+
+<main class="books-view" id="booksView" hidden>
+  <div class="books-bar">
+    <div class="bk-ctl">
+      <label class="watch-fld"><span>Symbols</span>
+        <select id="bkScope" aria-label="Which watch list to read fundamentals for">
+          <option value="ALL">All three lists</option>
+          <option value="IN">India</option>
+          <option value="US">United States</option>
+          <option value="SG">Singapore</option>
+        </select></label>
+      <button id="bkLoad" class="ghost-btn" type="button">Load books</button>
+      <button id="bkForce" class="ghost-btn" type="button" title="Ignore the week-old copy and re-request every statement">Re-read</button>
+      <button id="bkDrop" class="ghost-btn" type="button" title="Delete the locally cached statements">Clear cache</button>
+      <label class="tgl" title="Statement lines the free feed does not carry stay blank rather than estimated"><input type="checkbox" id="bkHideEmpty" checked><span>Hide empty rows</span></label>
+      <span class="grow"></span>
+      <span class="bk-count" id="bkCount">0 books</span>
+      <span class="books-status" id="bkStatus">Idle — a book is one request per company, so load a list once and read it all day.</span>
+    </div>
+  </div>
+
+  <div class="books-cols">
+    <section class="bk-main">
+      <div class="bk-pick">
+        <div class="bk-tabs" id="bkTabs" role="tablist" aria-label="Company"></div>
+        <div class="btn-row">
+          <button class="ghost-btn sm" id="bkDesk" type="button" title="Open this symbol on the Desk tab">Open on Desk</button>
+          <button class="ghost-btn sm" id="bkCsv" type="button" title="Download every statement table for this company">Excel / CSV</button>
+        </div>
+      </div>
+
+      <div class="bk-quote" id="bkQuote"></div>
+      <div class="bk-metrics" id="bkMetrics"></div>
+
+      <div class="bk-charts">
+        <div class="card bk-chart-card"><h3 class="card-title">Sales and profit <span class="muted" id="bkChartUnit"></span></h3>
+          <div class="bk-svgbox" id="bkChartAnnual"></div></div>
+        <div class="card bk-chart-card"><h3 class="card-title">Quarterly sales</h3>
+          <div class="bk-svgbox" id="bkChartQuarter"></div></div>
+      </div>
+
+      <div class="card bk-table-card">
+        <div class="table-head">
+          <div class="bk-seg" id="bkSeg" role="tablist" aria-label="Statement">
+            <button class="seg-btn is-on" data-st="pl" role="tab">P&amp;L</button>
+            <button class="seg-btn" data-st="bs" role="tab">Balance Sheet</button>
+            <button class="seg-btn" data-st="cf" role="tab">Cash Flow</button>
+            <button class="seg-btn" data-st="q" role="tab">Quarterly</button>
+            <button class="seg-btn" data-st="ra" role="tab">Ratios</button>
+          </div>
+          <span class="muted small" id="bkTableNote"></span>
+        </div>
+        <div class="table-scroll"><table class="bk-table" id="bkTable"><thead></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="card">
+        <h3 class="card-title">Peers on this list <span class="muted">(your own basket — the free feed has no industry table)</span></h3>
+        <div class="table-scroll"><table class="bk-table" id="bkPeers"><thead></thead><tbody></tbody></table></div>
+      </div>
+
+      <div class="bk-two">
+        <div class="card">
+          <h3 class="card-title">Analysis notes <span class="muted">(private, saved on this machine)</span></h3>
+          <textarea id="bkNote" rows="7" spellcheck="false" placeholder="Why you would own this, what would invalidate it, entry and exit plan…"></textarea>
+          <p class="card-foot" id="bkNoteSaved">Notes save as you type.</p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Manual entries <span class="tag tag-warn">no free source</span></h3>
+          <p class="muted small">Face value, shareholding and pledges are published by the exchanges, not by the quote feed this desk is allowed to read, so they are typed here and nothing is ever filled in for you.</p>
+          <div class="bk-man" id="bkManual"></div>
+          <div class="btn-row">
+            <button class="ghost-btn" id="bkManualSave" type="button">Save entries</button>
+            <button class="ghost-btn" id="bkManualClear" type="button">Clear for this symbol</button>
+          </div>
+          <h3 class="card-title bk-gap">Where these numbers come from</h3>
+          <ul class="notes" id="bkSource"></ul>
+        </div>
+      </div>
+    </section>
+
+    <aside class="bk-rail">
+      <div class="card">
+        <h3 class="card-title">Screener</h3>
+        <textarea id="bkQuery" rows="3" spellcheck="false" placeholder="roe &gt; 15 and debt to equity &lt; 1 and avg roce 5years &gt; 12"></textarea>
+        <div class="bk-qrow">
+          <button class="ghost-btn" id="bkRun" type="button">Run</button>
+          <button class="ghost-btn" id="bkSaveScreen" type="button">Save</button>
+          <button class="ghost-btn" id="bkCsvScreen" type="button">CSV</button>
+          <button class="ghost-btn" id="bkExplain" type="button">Explain</button>
+        </div>
+        <p class="bk-err" id="bkQueryErr" hidden></p>
+        <p class="bk-explain" id="bkExplainBox" hidden></p>
+        <div class="bk-presets" id="bkPresets"></div>
+        <div class="bk-saved" id="bkSaved"></div>
+        <p class="card-foot">Magnitudes are crore, so <code>market cap &gt; 20000</code> is 20,000 Cr; write <code>50bn</code>, <code>200mn</code> or <code>5lakh</code> for an absolute amount in the instrument's own currency. Percent and ratio fields take the number exactly as written.</p>
+      </div>
+
+      <details class="card card-disclose">
+        <summary>Fields this build can read</summary>
+        <div class="bk-fields" id="bkFields"></div>
+      </details>
+    </aside>
+  </div>
+
+  <div class="card bk-result-card">
+    <h3 class="card-title">Results <span class="tag tag-ok" id="bkResultCount">0</span>
+      <span class="muted small" id="bkResultOf"></span>
+    </h3>
+    <div class="bk-sscroll"><table class="bk-table ss" id="bkResults"><thead></thead><tbody></tbody></table></div>
+    <p class="card-foot">Magnitudes are in the currency each company files in, so an NSE and a Nasdaq name never sit in the same column by accident. Click a row to open that book; click a header to re-rank.</p>
+  </div>
+</main>
+
+<div class="drawer" id="settingsDrawer" hidden>
+  <div class="drawer-panel" role="dialog" aria-label="Settings">
+    <div class="drawer-head">
+      <h3>Engine &amp; feed settings</h3>
+      <button class="ghost-btn sm" id="settingsClose" type="button">Close</button>
+    </div>
+    <div class="drawer-body">
+      <fieldset>
+        <legend>Structure engine</legend>
+        <label class="fld"><span>Pivot width <em>bars each side of a swing</em></span>
+          <input type="range" id="setPivotWidth" min="2" max="10" step="1" value="3"><output>3</output></label>
+        <label class="fld"><span>Close weight <em>in the pivot price</em></span>
+          <input type="range" id="setCloseWeight" min="50" max="100" step="5" value="75"><output>75%</output></label>
+        <label class="fld"><span>Swing lookback <em>swings compared for HH/HL</em></span>
+          <input type="range" id="setLookback" min="2" max="8" step="1" value="4"><output>4</output></label>
+        <div class="fld"><span>ATR period</span><input type="number" id="setAtrPeriod" value="14" min="2" max="100"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Volume confirmation</legend>
+        <div class="fld"><span>RVOL threshold <em>bar vs 20-bar median</em></span><input type="number" id="setRvol" value="1.3" min="0" step="0.1" max="5"></div>
+        <div class="fld"><span>Sustained bars <em>consecutive volume confirmations</em></span><input type="number" id="setSustain" value="2" min="1" max="5"></div>
+        <div class="fld"><span>Min. break margin <em>× ATR</em></span><input type="number" id="setMargin" value="0.15" min="0" step="0.05" max="2"></div>
+        <label class="fld chk"><input type="checkbox" id="setRequireVol" checked><span>Never emit a signal without volume confirmation</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Live feed</legend>
+        <div class="fld"><span>Poll every <em>seconds</em></span><input type="number" id="setPoll" value="20" min="5" max="300"></div>
+        <div class="fld"><span>Price tick every <em>seconds · quote only, the tape rebuilds on the poll</em></span><input type="number" id="setTick" value="5" min="3" max="120"></div>
+        <div class="fld"><span>Base quote URL</span><input type="text" id="setBase" value="https://query1.finance.yahoo.com/v8/finance/chart/"></div>
+        <div class="fld"><span>CORS proxy template <em><code>{url}</code> is replaced; blank = direct</em></span>
+          <input type="text" id="setProxy" placeholder="https://corsproxy.io/?url={url}"></div>
+        <label class="fld chk"><input type="checkbox" id="setChain" checked><span>Try proxy failover chain automatically</span></label>
+        <label class="fld chk"><input type="checkbox" id="setPrePost" checked><span>Include pre/post-market bars (US)</span></label>
+        <div class="fld"><span>Ticker matching <em>a bare name is searched across NSE, BSE and the plain symbol, then remembered</em></span>
+          <button id="setClearSym" class="ghost-btn sm" type="button">Forget remembered ticker matches</button></div>
+      </fieldset>
+      <fieldset>
+        <legend>Convention</legend>
+        <label class="fld"><span>Reporting currency</span>
+          <select id="setCurrency"><option value="native">Native (as quoted)</option><option value="INR">INR</option><option value="USD">USD</option></select></label>
+        <div class="fld"><span>Home market <em>decides whether a bare ticker is tried on NSE or the plain symbol first</em></span>
+          <select id="setHome"><option value="IN">India (NSE/BSE, IST)</option><option value="US" selected>US (NYSE/Nasdaq, ET)</option><option value="GLOBAL">Global</option></select></div>
+        <label class="fld chk"><input type="checkbox" id="setWickPivots" checked><span>Show wick-only pivots as dashed levels (excluded from trend labels)</span></label>
+      </fieldset>
+    </div>
+    <div class="drawer-foot">
+      <span class="muted small">Settings persist locally.</span>
+      <button class="ghost-btn" id="setReset" type="button">Reset defaults</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<footer class="statusbar">
+  <span id="statusText">Idle.</span>
+  <span class="sep"></span>
+  <span id="feedText">feed: —</span>
+  <span class="sep"></span>
+  <span id="updatedText">—</span>
+  <span class="grow"></span>
+  <span class="muted">Analytical aid, not investment advice. Verify levels before deployment.</span>
+</footer>
+
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/tickers.js"></script>
+<script src="js/analysis.js"></script>
+<script src="js/indicators.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/watchlist.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/fundamentals.js"></script>
+<script src="js/books.js"></script>
+<script src="js/ui.js"></script>
+<script>SD.boot();</script>
+</body>
+</html>
